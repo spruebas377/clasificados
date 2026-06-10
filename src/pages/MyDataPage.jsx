@@ -41,15 +41,18 @@ export default function MyDataPage() {
 
   const [authModal, setAuthModal] = useState({ open: false, mode: "login" });
   const [formData, setFormData] = useState({
+    email: "",
     full_name: "",
     phone: "",
     ciudad: "",
     provincia: "Formosa",
   });
+  const [originalEmail, setOriginalEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ type: "", text: "" });
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
 
-  // Load user data from the users table
+  // Load user data from the users table and auth
   useEffect(() => {
     if (user) {
       loadUserData();
@@ -61,48 +64,42 @@ export default function MyDataPage() {
 
     setLoading(true);
     try {
+      // Cargar email desde auth
+      const userEmail = user.email || "";
+      setOriginalEmail(userEmail);
+
       // Intentar obtener datos de la tabla users
       const { data: userData, error } = await supabase
         .from("users")
         .select("full_name, phone, ciudad, provincia")
         .eq("id", user.id)
-        .maybeSingle(); // Usar maybeSingle en lugar de single para evitar error 406
+        .maybeSingle();
 
       if (error) {
         console.error("Error loading user data:", error);
       }
 
-      if (userData) {
-        // Datos existen en la tabla users
-        setFormData({
-          full_name: userData.full_name || "",
-          phone: userData.phone || "",
-          ciudad: userData.ciudad || "",
-          provincia: userData.provincia || "Formosa",
-        });
-      } else {
-        // No hay datos en users, usar metadata
-        const metadata = user.user_metadata || {};
-        setFormData({
-          full_name: metadata.full_name || metadata.nombre_apellido || "",
-          phone: metadata.phone || metadata.telefono || "",
-          ciudad: metadata.ciudad || "",
-          provincia: metadata.provincia || "Formosa",
-        });
+      // Establecer datos del formulario
+      setFormData({
+        email: userEmail,
+        full_name: userData?.full_name || "",
+        phone: userData?.phone || "",
+        ciudad: userData?.ciudad || "",
+        provincia: userData?.provincia || "Formosa",
+      });
 
-        // Si hay metadata, intentar guardar en users
-        if (metadata.full_name || metadata.phone) {
-          try {
-            await saveToUsersTable({
-              full_name: metadata.full_name || metadata.nombre_apellido,
-              phone: metadata.phone || metadata.telefono,
-              ciudad: metadata.ciudad,
-              provincia: metadata.provincia,
-            });
-          } catch (e) {
-            console.error("Error saving metadata to users:", e);
-          }
-        }
+      // Si no hay datos en users pero hay en metadata, guardarlos
+      if (
+        !userData &&
+        (user.user_metadata?.full_name || user.user_metadata?.phone)
+      ) {
+        const metadata = user.user_metadata || {};
+        await saveToUsersTable({
+          full_name: metadata.full_name || metadata.nombre_apellido,
+          phone: metadata.phone || metadata.telefono,
+          ciudad: metadata.ciudad,
+          provincia: metadata.provincia,
+        });
       }
     } catch (e) {
       console.error("Error loading user data:", e);
@@ -114,20 +111,14 @@ export default function MyDataPage() {
   const saveToUsersTable = async (data) => {
     if (!user) return;
 
-    // Primero verificar si el usuario ya existe
     const { data: existingUser, error: checkError } = await supabase
       .from("users")
       .select("id")
       .eq("id", user.id)
       .maybeSingle();
 
-    if (checkError && checkError.code !== "PGRST116") {
-      console.error("Error checking user:", checkError);
-    }
-
     let result;
     if (existingUser) {
-      // Actualizar usuario existente
       result = await supabase
         .from("users")
         .update({
@@ -139,7 +130,6 @@ export default function MyDataPage() {
         })
         .eq("id", user.id);
     } else {
-      // Insertar nuevo usuario
       result = await supabase.from("users").insert({
         id: user.id,
         email: user.email,
@@ -167,8 +157,47 @@ export default function MyDataPage() {
         provincia: data.provincia,
       },
     });
-
     if (error) throw error;
+  };
+
+  const updateEmail = async (newEmail) => {
+    if (!user) return;
+
+    setIsChangingEmail(true);
+
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        email: newEmail,
+      });
+
+      if (error) throw error;
+
+      setStatusMessage({
+        type: "success",
+        text: `📧 Se ha enviado un email de verificación a ${newEmail}. Revisa tu bandeja de entrada (y spam) y haz clic en el enlace para confirmar el cambio. El correo se actualizará automáticamente después de la confirmación.`,
+      });
+
+      return true;
+    } catch (err) {
+      console.error("Error updating email:", err);
+
+      let errorMessage = "Error al cambiar el correo electrónico. ";
+      if (err.message?.includes("already been registered")) {
+        errorMessage += "Este correo ya está registrado en otra cuenta.";
+      } else if (err.message?.includes("valid email")) {
+        errorMessage += "Por favor ingresa un correo electrónico válido.";
+      } else {
+        errorMessage += err.message;
+      }
+
+      setStatusMessage({
+        type: "error",
+        text: errorMessage,
+      });
+      return false;
+    } finally {
+      setIsChangingEmail(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -187,7 +216,18 @@ export default function MyDataPage() {
     setStatusMessage({ type: "", text: "" });
 
     try {
-      // Guardar en la tabla users
+      // Verificar si el email cambió y no está pendiente
+      const emailChanged = formData.email !== originalEmail;
+
+      if (emailChanged) {
+        const emailUpdated = await updateEmail(formData.email);
+        if (emailUpdated) {
+          // Restaurar el email original en el formulario hasta que se verifique
+          setFormData((prev) => ({ ...prev, email: originalEmail }));
+        }
+      }
+
+      // Guardar en la tabla users (sin el email, eso se maneja aparte)
       await saveToUsersTable(formData);
 
       // Sincronizar con auth metadata
@@ -198,14 +238,17 @@ export default function MyDataPage() {
         await refreshUser();
       }
 
-      setStatusMessage({
-        type: "success",
-        text: "¡Tus datos se actualizaron con éxito!",
-      });
+      // Si no hubo cambio de email o fue exitoso
+      if (!emailChanged) {
+        setStatusMessage({
+          type: "success",
+          text: "¡Tus datos se actualizaron con éxito!",
+        });
 
-      setTimeout(() => {
-        setStatusMessage({ type: "", text: "" });
-      }, 3000);
+        setTimeout(() => {
+          setStatusMessage({ type: "", text: "" });
+        }, 3000);
+      }
     } catch (err) {
       console.error("Error al actualizar datos:", err);
       setStatusMessage({
@@ -319,7 +362,7 @@ export default function MyDataPage() {
             </h1>
             <p style={{ color: "var(--text-muted)" }}>
               Completá tu información de contacto. Estos datos se usarán para
-              tus publicaciones.
+              tus publicaciones y comunicaciones.
             </p>
           </div>
 
@@ -346,13 +389,14 @@ export default function MyDataPage() {
                       ? "var(--success)"
                       : "#ef4444",
                   border: `1px solid ${statusMessage.type === "success" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)"}`,
+                  whiteSpace: "pre-line",
                 }}
               >
                 <i
-                  className={`fas ${statusMessage.type === "success" ? "fa-circle-check" : "fa-circle-xmark"}`}
+                  className={`fas ${statusMessage.type === "success" ? "fa-envelope" : "fa-circle-xmark"}`}
                   style={{ marginRight: "0.5rem" }}
                 ></i>
-                {statusMessage.text}
+                <span>{statusMessage.text}</span>
               </div>
             )}
 
@@ -361,6 +405,44 @@ export default function MyDataPage() {
               className="publish-form"
               style={{ padding: 0 }}
             >
+              {/* Campo de Email */}
+              <div className="form-group">
+                <label htmlFor="email">
+                  Correo Electrónico *
+                  <span
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--text-muted)",
+                      marginLeft: "0.5rem",
+                    }}
+                  >
+                    (cambiarlo requiere verificación)
+                  </span>
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="tu@email.com"
+                  required
+                  disabled={isChangingEmail}
+                />
+                {isChangingEmail && (
+                  <small
+                    style={{
+                      color: "var(--primary)",
+                      marginTop: "0.25rem",
+                      display: "block",
+                    }}
+                  >
+                    <i className="fas fa-spinner fa-spin"></i> Enviando
+                    verificación...
+                  </small>
+                )}
+              </div>
+
               <div className="form-group">
                 <label htmlFor="full_name">Nombre y Apellido *</label>
                 <input
@@ -432,10 +514,10 @@ export default function MyDataPage() {
               <button
                 type="submit"
                 className="btn-submit"
-                disabled={loading}
+                disabled={loading || isChangingEmail}
                 style={{ marginTop: "2rem" }}
               >
-                {loading ? (
+                {loading || isChangingEmail ? (
                   <>
                     <i className="fas fa-spinner fa-spin"></i> Guardando...
                   </>
@@ -446,6 +528,47 @@ export default function MyDataPage() {
                 )}
               </button>
             </form>
+
+            {/* Advertencia sobre cambio de email */}
+            <div
+              style={{
+                marginTop: "2rem",
+                padding: "1rem",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: "rgba(245, 158, 11, 0.08)",
+                border: "1px dashed rgba(245, 158, 11, 0.3)",
+                fontSize: "0.85rem",
+                color: "var(--text-muted)",
+              }}
+            >
+              <i
+                className="fas fa-info-circle"
+                style={{ color: "#f59e0b", marginRight: "0.5rem" }}
+              ></i>
+              <strong>Importante:</strong> Si cambias tu correo electrónico,
+              recibirás un enlace de verificación. El cambio se aplicará solo
+              después de confirmarlo desde tu nuevo correo. Mientras tanto,
+              seguirás usando tu email actual.
+            </div>
+
+            {/* Estado actual del email */}
+            <div
+              style={{
+                marginTop: "1rem",
+                padding: "0.75rem",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: "rgba(59, 130, 246, 0.05)",
+                fontSize: "0.8rem",
+                color: "var(--text-muted)",
+                textAlign: "center",
+              }}
+            >
+              <i
+                className="fas fa-check-circle"
+                style={{ color: "var(--success)", marginRight: "0.5rem" }}
+              ></i>
+              Email actual: <strong>{originalEmail}</strong>
+            </div>
           </div>
         </div>
       </main>

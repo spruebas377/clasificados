@@ -4,6 +4,9 @@ import AdDetailPage from "./pages/AdDetailPage";
 import MyQuestionsPage from "./pages/MyQuestionsPage";
 import MyDataPage from "./pages/MyDataPage";
 import AuthCallback from "./pages/AuthCallback";
+import PrivacyPage from "./pages/legal/PrivacyPage";
+import TermsPage from "./pages/legal/TermsPage";
+import CookiesPage from "./pages/legal/CookiesPage";
 
 export default function App() {
   return (
@@ -14,6 +17,9 @@ export default function App() {
         <Route path="/mis-preguntas" element={<MyQuestionsPage />} />
         <Route path="/mis-datos" element={<MyDataPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/privacidad" element={<PrivacyPage />} />
+        <Route path="/terminos" element={<TermsPage />} />
+        <Route path="/cookies" element={<CookiesPage />} />
       </Routes>
     </Router>
   );
