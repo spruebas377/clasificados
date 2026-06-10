@@ -1,3 +1,4 @@
+// pages/MyDataPage.jsx
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -36,67 +37,139 @@ const PROVINCIAS_ARGENTINA = [
 
 export default function MyDataPage() {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refreshUser } = useAuth();
 
   const [authModal, setAuthModal] = useState({ open: false, mode: "login" });
   const [formData, setFormData] = useState({
-    nombre_apellido: "",
-    telefono: "",
+    full_name: "",
+    phone: "",
     ciudad: "",
     provincia: "Formosa",
   });
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ type: "", text: "" });
 
-  // Load initial data from user_metadata and Users table
+  // Load user data from the users table
   useEffect(() => {
     if (user) {
-      const metadata = user.user_metadata || {};
-
-      // Set initial values from metadata first
-      setFormData((prev) => ({
-        ...prev,
-        nombre_apellido: metadata.full_name || metadata.nombre_apellido || "",
-        telefono: metadata.telefono || "",
-        ciudad: metadata.ciudad || "",
-        provincia: metadata.provincia || "Formosa",
-      }));
-
-      // Fetch from users table to overwrite phone if present (trying lowercase first)
-      const fetchDbPhone = async () => {
-        try {
-          let { data, error } = await supabase
-            .from("users")
-            .select("phone")
-            .eq("id", user.id)
-            .single();
-
-          if (error) {
-            // Try uppercase Users table
-            const { data: data2, error: error2 } = await supabase
-              .from("Users")
-              .select("phone")
-              .eq("id", user.id)
-              .single();
-            if (!error2 && data2) {
-              data = data2;
-            }
-          }
-
-          if (data && data.phone) {
-            setFormData((prev) => ({
-              ...prev,
-              telefono: data.phone,
-            }));
-          }
-        } catch (e) {
-          console.warn("Error fetching phone from users table:", e);
-        }
-      };
-
-      fetchDbPhone();
+      loadUserData();
     }
   }, [user]);
+
+  const loadUserData = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      // Intentar obtener datos de la tabla users
+      const { data: userData, error } = await supabase
+        .from("users")
+        .select("full_name, phone, ciudad, provincia")
+        .eq("id", user.id)
+        .maybeSingle(); // Usar maybeSingle en lugar de single para evitar error 406
+
+      if (error) {
+        console.error("Error loading user data:", error);
+      }
+
+      if (userData) {
+        // Datos existen en la tabla users
+        setFormData({
+          full_name: userData.full_name || "",
+          phone: userData.phone || "",
+          ciudad: userData.ciudad || "",
+          provincia: userData.provincia || "Formosa",
+        });
+      } else {
+        // No hay datos en users, usar metadata
+        const metadata = user.user_metadata || {};
+        setFormData({
+          full_name: metadata.full_name || metadata.nombre_apellido || "",
+          phone: metadata.phone || metadata.telefono || "",
+          ciudad: metadata.ciudad || "",
+          provincia: metadata.provincia || "Formosa",
+        });
+
+        // Si hay metadata, intentar guardar en users
+        if (metadata.full_name || metadata.phone) {
+          try {
+            await saveToUsersTable({
+              full_name: metadata.full_name || metadata.nombre_apellido,
+              phone: metadata.phone || metadata.telefono,
+              ciudad: metadata.ciudad,
+              provincia: metadata.provincia,
+            });
+          } catch (e) {
+            console.error("Error saving metadata to users:", e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error loading user data:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveToUsersTable = async (data) => {
+    if (!user) return;
+
+    // Primero verificar si el usuario ya existe
+    const { data: existingUser, error: checkError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== "PGRST116") {
+      console.error("Error checking user:", checkError);
+    }
+
+    let result;
+    if (existingUser) {
+      // Actualizar usuario existente
+      result = await supabase
+        .from("users")
+        .update({
+          full_name: data.full_name,
+          phone: data.phone,
+          ciudad: data.ciudad,
+          provincia: data.provincia,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+    } else {
+      // Insertar nuevo usuario
+      result = await supabase.from("users").insert({
+        id: user.id,
+        email: user.email,
+        full_name: data.full_name,
+        phone: data.phone,
+        ciudad: data.ciudad,
+        provincia: data.provincia,
+      });
+    }
+
+    if (result.error) {
+      console.error("Error saving to users table:", result.error);
+      throw result.error;
+    }
+
+    return result;
+  };
+
+  const saveToAuthMetadata = async (data) => {
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        full_name: data.full_name,
+        phone: data.phone,
+        ciudad: data.ciudad,
+        provincia: data.provincia,
+      },
+    });
+
+    if (error) throw error;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -114,86 +187,31 @@ export default function MyDataPage() {
     setStatusMessage({ type: "", text: "" });
 
     try {
-      // 1. Save in the users (or Users) database table using upsert to handle missing rows
-      let dbError = null;
-      let isTableMissing = false;
+      // Guardar en la tabla users
+      await saveToUsersTable(formData);
 
-      try {
-        const { error } = await supabase
-          .from("users")
-          .upsert({
-            id: user.id,
-            phone: formData.telefono,
-            provincia: formData.provincia,
-            ciudad: formData.ciudad,
-          });
-        dbError = error;
-      } catch (e) {
-        dbError = e;
+      // Sincronizar con auth metadata
+      await saveToAuthMetadata(formData);
+
+      // Refrescar el contexto
+      if (refreshUser) {
+        await refreshUser();
       }
 
-      if (dbError) {
-        console.warn(
-          "Failed to upsert into users table, trying Users in uppercase:",
-          dbError,
-        );
-        try {
-          const { error: dbError2 } = await supabase
-            .from("Users")
-            .upsert({ id: user.id, phone: formData.telefono });
-          if (dbError2) {
-            throw dbError2;
-          }
-        } catch (err) {
-          console.error("Failed to upsert into Users table:", err);
-          // If the table is missing from schema cache (PGRST205) or not found (404 / 42P01)
-          const errCode =
-            err.code ||
-            (err.message && err.message.includes("PGRST205") ? "PGRST205" : "");
-          if (
-            errCode === "PGRST205" ||
-            err.message?.includes("schema cache") ||
-            err.message?.includes("relation") ||
-            String(err).includes("404")
-          ) {
-            isTableMissing = true;
-          } else {
-            throw new Error(
-              `Error en la base de datos (users/Users): ${err.message || dbError.message || err}`,
-            );
-          }
-        }
-      }
-
-      // 2. Update user_metadata in Supabase auth
-      const { data, error } = await supabase.auth.updateUser({
-        data: {
-          full_name: formData.nombre_apellido,
-          nombre_apellido: formData.nombre_apellido,
-          telefono: formData.telefono,
-          ciudad: formData.ciudad,
-          provincia: formData.provincia,
-        },
+      setStatusMessage({
+        type: "success",
+        text: "¡Tus datos se actualizaron con éxito!",
       });
 
-      if (error) throw error;
-
-      if (isTableMissing) {
-        setStatusMessage({
-          type: "warning",
-          text: 'Tus datos se guardaron en tu cuenta de perfil, pero la tabla "users" (o "Users") no existe en tu base de datos de Supabase. Por favor, créala para registrar el teléfono allí.',
-        });
-      } else {
-        setStatusMessage({
-          type: "success",
-          text: "¡Tus datos se actualizaron con éxito!",
-        });
-      }
+      setTimeout(() => {
+        setStatusMessage({ type: "", text: "" });
+      }, 3000);
     } catch (err) {
       console.error("Error al actualizar datos:", err);
       setStatusMessage({
         type: "error",
-        text: "Ocurrió un error al intentar actualizar los datos. Por favor, intentá de nuevo.",
+        text:
+          err.message || "Ocurrió un error al intentar actualizar los datos.",
       });
     } finally {
       setLoading(false);
@@ -211,6 +229,73 @@ export default function MyDataPage() {
     [navigate],
   );
 
+  if (authLoading) {
+    return (
+      <div className="loading-page">
+        <Header onShowAuth={handleShowAuth} onOpenAd={handleOpenAd} />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "5rem 0",
+          }}
+        >
+          <LoadingSpinner />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div
+        className="ad-detail-page"
+        style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}
+      >
+        <Header onShowAuth={handleShowAuth} onOpenAd={handleOpenAd} />
+        <main style={{ flex: 1, padding: "3rem 0" }}>
+          <div className="container" style={{ maxWidth: "800px" }}>
+            <div
+              style={{
+                background: "var(--surface)",
+                borderRadius: "var(--radius-lg)",
+                padding: "4rem 2rem",
+                textAlign: "center",
+                boxShadow: "var(--shadow-md)",
+              }}
+            >
+              <i
+                className="fas fa-user-lock"
+                style={{
+                  fontSize: "3.5rem",
+                  color: "var(--primary)",
+                  marginBottom: "1.5rem",
+                }}
+              ></i>
+              <h2 style={{ marginBottom: "1rem" }}>
+                Iniciá sesión para editar tus datos
+              </h2>
+              <button
+                className="btn-submit"
+                style={{ maxWidth: "250px", margin: "0 auto" }}
+                onClick={() => handleShowAuth("login")}
+              >
+                Iniciar Sesión <i className="fas fa-sign-in-alt"></i>
+              </button>
+            </div>
+          </div>
+        </main>
+        <Footer />
+        <AuthModal
+          isOpen={authModal.open}
+          onClose={() => setAuthModal({ open: false, mode: "login" })}
+          initialMode={authModal.mode}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className="ad-detail-page"
@@ -220,229 +305,152 @@ export default function MyDataPage() {
 
       <main style={{ flex: 1, padding: "3rem 0" }}>
         <div className="container" style={{ maxWidth: "800px" }}>
-          {/* Back button */}
           <button className="btn-back" onClick={() => navigate(-1)}>
             <i className="fas fa-arrow-left"></i> Volver
           </button>
 
-          {/* Page Header */}
-          <div
-            style={{
-              marginBottom: "2.5rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.5rem",
-            }}
-          >
-            <h1
-              style={{
-                fontSize: "2.5rem",
-                fontWeight: 800,
-                background:
-                  "linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                width: "fit-content",
-              }}
-            >
+          <div style={{ marginBottom: "2.5rem" }}>
+            <h1 style={{ fontSize: "2.5rem", fontWeight: 800 }}>
               <i
                 className="fas fa-user-circle"
                 style={{ marginRight: "0.75rem", color: "var(--primary)" }}
               ></i>
               Mis Datos
             </h1>
-            <p style={{ color: "var(--text-muted)", fontSize: "1.05rem" }}>
-              Completá tu información de contacto para que los interesados
-              puedan comunicarse con vos más fácilmente.
+            <p style={{ color: "var(--text-muted)" }}>
+              Completá tu información de contacto. Estos datos se usarán para
+              tus publicaciones.
             </p>
           </div>
 
-          {authLoading ? (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                padding: "5rem 0",
-              }}
-            >
-              <LoadingSpinner />
-            </div>
-          ) : !user ? (
-            /* Not authenticated view */
-            <div
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-lg)",
-                padding: "4rem 2rem",
-                textAlign: "center",
-                boxShadow: "var(--shadow-md)",
-                border: "1px solid var(--border-light)",
-                maxWidth: "600px",
-                margin: "2rem auto",
-              }}
-            >
-              <i
-                className="fas fa-user-lock"
+          <div
+            style={{
+              background: "var(--surface)",
+              borderRadius: "var(--radius-lg)",
+              padding: "2.5rem",
+              boxShadow: "var(--shadow-md)",
+            }}
+          >
+            {statusMessage.text && (
+              <div
                 style={{
-                  fontSize: "3.5rem",
-                  color: "var(--primary)",
+                  padding: "1rem 1.25rem",
+                  borderRadius: "var(--radius-md)",
                   marginBottom: "1.5rem",
-                  opacity: 0.8,
-                }}
-              ></i>
-              <h2 style={{ marginBottom: "1rem", fontWeight: 700 }}>
-                Iniciá sesión para editar tus datos
-              </h2>
-              <p
-                style={{
-                  color: "var(--text-muted)",
-                  marginBottom: "2rem",
-                  lineHeight: 1.6,
+                  backgroundColor:
+                    statusMessage.type === "success"
+                      ? "rgba(16, 185, 129, 0.1)"
+                      : "rgba(239, 68, 68, 0.1)",
+                  color:
+                    statusMessage.type === "success"
+                      ? "var(--success)"
+                      : "#ef4444",
+                  border: `1px solid ${statusMessage.type === "success" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)"}`,
                 }}
               >
-                Necesitamos que te identifiques para poder asociar y resguardar
-                tu información de perfil.
-              </p>
-              <button
-                className="btn-submit"
-                style={{ maxWidth: "250px", margin: "0 auto" }}
-                onClick={() => handleShowAuth("login")}
-              >
-                Iniciar Sesión <i className="fas fa-sign-in-alt"></i>
-              </button>
-            </div>
-          ) : (
-            /* Profile Form */
-            <div
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-lg)",
-                padding: "2.5rem",
-                boxShadow: "var(--shadow-md)",
-                border: "1px solid var(--border-light)",
-              }}
+                <i
+                  className={`fas ${statusMessage.type === "success" ? "fa-circle-check" : "fa-circle-xmark"}`}
+                  style={{ marginRight: "0.5rem" }}
+                ></i>
+                {statusMessage.text}
+              </div>
+            )}
+
+            <form
+              onSubmit={handleSubmit}
+              className="publish-form"
+              style={{ padding: 0 }}
             >
-              {statusMessage.text && (
-                <div
+              <div className="form-group">
+                <label htmlFor="full_name">Nombre y Apellido *</label>
+                <input
+                  type="text"
+                  id="full_name"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleInputChange}
+                  placeholder="Ej. Juan Pérez"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="phone">Teléfono / WhatsApp *</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="Ej. 5493704123456"
+                  required
+                />
+                <small
                   style={{
-                    padding: "1rem 1.25rem",
-                    borderRadius: "var(--radius-md)",
-                    marginBottom: "1.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.75rem",
-                    fontSize: "0.95rem",
-                    fontWeight: 500,
-                    backgroundColor:
-                      statusMessage.type === "success"
-                        ? "rgba(16, 185, 129, 0.1)"
-                        : statusMessage.type === "warning"
-                          ? "rgba(245, 158, 11, 0.1)"
-                          : "rgba(239, 68, 68, 0.1)",
-                    color:
-                      statusMessage.type === "success"
-                        ? "var(--success)"
-                        : statusMessage.type === "warning"
-                          ? "#d97706"
-                          : "#ef4444",
-                    border: `1px solid ${statusMessage.type === "success" ? "rgba(16, 185, 129, 0.2)" : statusMessage.type === "warning" ? "rgba(245, 158, 11, 0.2)" : "rgba(239, 68, 68, 0.2)"}`,
+                    color: "var(--text-muted)",
+                    fontSize: "0.75rem",
+                    marginTop: "0.25rem",
+                    display: "block",
                   }}
                 >
-                  <i
-                    className={`fas ${statusMessage.type === "success" ? "fa-circle-check" : statusMessage.type === "warning" ? "fa-triangle-exclamation" : "fa-circle-xmark"}`}
-                    style={{ fontSize: "1.2rem" }}
-                  ></i>
-                  <span>{statusMessage.text}</span>
-                </div>
-              )}
+                  Incluye código de país y área. Ej: 5493704123456
+                </small>
+              </div>
 
-              <form
-                onSubmit={handleSubmit}
-                className="publish-form"
-                style={{ padding: 0 }}
-              >
+              <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="nombre_apellido">Nombre y Apellido</label>
+                  <label htmlFor="provincia">Provincia</label>
+                  <select
+                    id="provincia"
+                    name="provincia"
+                    value={formData.provincia}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    {PROVINCIAS_ARGENTINA.map((prov) => (
+                      <option key={prov} value={prov}>
+                        {prov}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="ciudad">Ciudad</label>
                   <input
                     type="text"
-                    id="nombre_apellido"
-                    name="nombre_apellido"
-                    value={formData.nombre_apellido}
+                    id="ciudad"
+                    name="ciudad"
+                    value={formData.ciudad}
                     onChange={handleInputChange}
-                    placeholder="Ej. Juan Pérez"
+                    placeholder="Ej. Formosa"
                     required
                   />
                 </div>
+              </div>
 
-                <div className="form-group">
-                  <label htmlFor="telefono">Teléfono / WhatsApp</label>
-                  <input
-                    type="tel"
-                    id="telefono"
-                    name="telefono"
-                    value={formData.telefono}
-                    onChange={handleInputChange}
-                    placeholder="Ej. +54 370 4123456"
-                    required
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="provincia">Provincia</label>
-                    <select
-                      id="provincia"
-                      name="provincia"
-                      value={formData.provincia}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      {PROVINCIAS_ARGENTINA.map((prov) => (
-                        <option key={prov} value={prov}>
-                          {prov}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="ciudad">Ciudad</label>
-                    <input
-                      type="text"
-                      id="ciudad"
-                      name="ciudad"
-                      value={formData.ciudad}
-                      onChange={handleInputChange}
-                      placeholder="Ej. Formosa"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn-submit"
-                  disabled={loading}
-                  style={{ marginTop: "2rem" }}
-                >
-                  {loading ? (
-                    <>
-                      <i className="fas fa-spinner fa-spin"></i> Guardando...
-                    </>
-                  ) : (
-                    <>
-                      Guardar Cambios <i className="fas fa-save"></i>
-                    </>
-                  )}
-                </button>
-              </form>
-            </div>
-          )}
+              <button
+                type="submit"
+                className="btn-submit"
+                disabled={loading}
+                style={{ marginTop: "2rem" }}
+              >
+                {loading ? (
+                  <>
+                    <i className="fas fa-spinner fa-spin"></i> Guardando...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-save"></i> Guardar Cambios
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </main>
 
       <Footer />
-
       <AuthModal
         isOpen={authModal.open}
         onClose={() => setAuthModal({ open: false, mode: "login" })}

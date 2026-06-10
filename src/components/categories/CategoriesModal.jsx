@@ -1,11 +1,17 @@
-import Modal from '../ui/Modal'
-import CategoriesGrid from './CategoriesGrid'
+// components/categories/CategoriesModal.jsx
+import Modal from "../ui/Modal";
+import CategoriesGrid from "./CategoriesGrid";
 
-export default function CategoriesModal({ isOpen, onClose, categories, onSelect }) {
+export default function CategoriesModal({
+  isOpen,
+  onClose,
+  categories,
+  onSelect,
+}) {
   const handleSelect = (id) => {
-    onSelect(id)
-    onClose()
-  }
+    onSelect(id); // La verificación ya se maneja en onSelect
+    onClose();
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="800px">
@@ -15,9 +21,9 @@ export default function CategoriesModal({ isOpen, onClose, categories, onSelect 
           &times;
         </button>
       </div>
-      <div style={{ padding: '1.5rem' }}>
+      <div style={{ padding: "1.5rem" }}>
         <CategoriesGrid categories={categories} onSelect={handleSelect} />
       </div>
     </Modal>
-  )
+  );
 }

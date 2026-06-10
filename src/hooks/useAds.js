@@ -1,9 +1,12 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
+const ADULT_CATEGORY_IDS = [16] // Agregar las id de categorías para mayores de 18 años"
+
 export function useAds() {
   const [ads, setAds] = useState([])
   const [loading, setLoading] = useState(true)
+
 
   const fetchAds = useCallback(async (filters = {}) => {
     setLoading(true)
@@ -12,6 +15,31 @@ export function useAds() {
         .from('anuncios')
         .select('*, categorias(*)')
         .eq('activo', true)
+
+
+      // 🔒 FILTRO DE SEGURIDAD: Excluir categorías +18 si no está verificado
+      const isAgeVerified = localStorage.getItem('age_verified') === 'true'
+      const timestamp = localStorage.getItem('age_verified_timestamp')
+      const isValidVerification = isAgeVerified && timestamp && 
+        (Date.now() - parseInt(timestamp)) < (30 * 24 * 60 * 60 * 1000)
+
+      if (!isValidVerification) {
+        // Usuario no verificado: excluir todas las categorías +18
+        query = query.not('categoria_id', 'in', `(${ADULT_CATEGORY_IDS.join(',')})`)
+      }
+
+      // Si el filtro específicamente pide una categoría +18, verificamos de nuevo
+      if (filters.categoria_id && filters.categoria_id !== 'all') {
+        const isRequestingAdult = ADULT_CATEGORY_IDS.includes(parseInt(filters.categoria_id))
+        
+        if (isRequestingAdult && !isValidVerification) {
+          // Si no está verificado y quiere ver adultos, devolvemos array vacío
+          setAds([])
+          setLoading(false)
+          return
+        }
+      }
+
 
       if (filters.onlyMine && filters.userId) {
         query = query.eq('user_id', filters.userId)

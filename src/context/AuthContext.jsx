@@ -1,96 +1,149 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+// context/AuthContext.jsx
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import { supabase } from "../lib/supabase";
 
-const AuthContext = createContext(null)
+const AuthContext = createContext({});
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+  // Función para refrescar el usuario actual
+  const refreshUser = useCallback(async () => {
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser();
+    setUser(currentUser);
+    return currentUser;
+  }, []);
 
-    // Listen to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null)
-      }
-    )
+  // Función para obtener datos completos del usuario desde la tabla users
+  const getUserFromTable = useCallback(async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-    return () => subscription.unsubscribe()
-  }, [])
+      if (error) return null;
+      return data;
+    } catch (e) {
+      console.error("Error getting user from table:", e);
+      return null;
+    }
+  }, []);
 
-  const signInWithPassword = useCallback(async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-  }, [])
+  // Función para obtener el nombre del usuario
+  const getUserName = useCallback(() => {
+    if (!user) return "Invitado";
+    // Intentar obtener de diferentes lugares posibles
+    const name =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.nombre_apellido ||
+      user.email?.split("@")[0] ||
+      "Usuario";
+    return name;
+  }, [user]);
 
+  // Registro con email y password
   const signUp = useCallback(async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
+    const { data, error } = await supabase.auth.signUp({
+      email,
       password,
       options: {
-        emailRedirectTo: window.location.href.split('#')[0].split('?')[0]
-      }
-    })
-    if (error) throw error
-    return data
-  }, [])
+        data: {
+          email: email,
+        },
+      },
+    });
+    if (error) throw error;
+    return data;
+  }, []);
 
+  // Inicio de sesión con email y password
+  const signInWithPassword = useCallback(async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    setUser(data.user);
+    return data;
+  }, []);
+
+  // Inicio de sesión con Google
   const signInWithGoogle = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.href.split('#')[0].split('?')[0] },
-    })
-    if (error) throw error
-  }, [])
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) throw error;
+    return data;
+  }, []);
 
+  // Inicio de sesión con Facebook
   const signInWithFacebook = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'facebook',
-      options: { redirectTo: window.location.href.split('#')[0].split('?')[0] },
-    })
-    if (error) throw error
-  }, [])
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "facebook",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) throw error;
+    return data;
+  }, []);
 
+  // Cerrar sesión
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
-  }, [])
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setUser(null);
+  }, []);
 
-  const getUserName = useCallback(() => {
-    if (!user) return ''
-    return user.user_metadata?.full_name || user.email.split('@')[0]
-  }, [user])
+  // Escuchar cambios en la autenticación
+  useEffect(() => {
+    // Obtener sesión actual
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-  const isSuperUser = Boolean(
-    user?.email && (
-      import.meta.env.VITE_ADMIN_EMAIL === user.email ||
-      import.meta.env.VITE_ADMIN_EMAILS?.split(',').includes(user.email) ||
-      user.email === 'admin@clasificados.com' // Fallback for testing
-    )
-  )
+    // Escuchar cambios
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const value = {
     user,
     loading,
-    isSuperUser,
-    signInWithPassword,
     signUp,
+    signInWithPassword,
     signInWithGoogle,
     signInWithFacebook,
     signOut,
     getUserName,
-  }
+    refreshUser, // ← Nueva función
+    getUserFromTable, // ← Nueva función
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used within an AuthProvider')
-  return context
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

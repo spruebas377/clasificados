@@ -1,3 +1,4 @@
+// components/ads/PublishModal.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Modal from "../ui/Modal";
@@ -61,51 +62,46 @@ export default function PublishModal({
     }
   }, [editingAd, onProvinceChange]);
 
-  // Fetch user phone from database table or metadata when opening form for a new ad
+  // Fetch user phone from users table when opening form for a new ad
   useEffect(() => {
     if (isOpen && !editingAd && user) {
       const getPhone = async () => {
         setCheckingPhone(true);
         setNoPhoneRegistered(false);
-        let phone =
-          user.user_metadata?.telefono || user.user_metadata?.phone || "";
+
+        let phone = "";
 
         try {
-          // Fetch from users table (lowercase priority)
-          let { data, error } = await supabase
+          // Primero intentar desde la tabla users
+          const { data: userData, error: userError } = await supabase
             .from("users")
-            .select("phone")
+            .select("phone, full_name")
             .eq("id", user.id)
             .single();
 
-          if (error) {
-            // Try uppercase Users
-            const { data: data2 } = await supabase
-              .from("Users")
-              .select("phone")
-              .eq("id", user.id)
-              .single();
-            if (data2) data = data2;
+          if (!userError && userData && userData.phone) {
+            phone = userData.phone;
           }
 
-          if (data && data.phone) {
-            phone = data.phone;
+          // Si no hay teléfono en users, intentar desde metadata
+          if (!phone) {
+            phone =
+              user.user_metadata?.phone || user.user_metadata?.telefono || "";
+          }
+
+          if (phone) {
+            setForm((prev) => ({ ...prev, contact: phone }));
+            setNoPhoneRegistered(false);
+          } else {
+            setForm((prev) => ({ ...prev, contact: "" }));
+            setNoPhoneRegistered(true);
           }
         } catch (e) {
-          console.warn(
-            "Could not fetch phone from database inside PublishModal:",
-            e,
-          );
-        }
-
-        if (phone) {
-          setForm((prev) => ({ ...prev, contact: phone }));
-          setNoPhoneRegistered(false);
-        } else {
-          setForm((prev) => ({ ...prev, contact: "" }));
+          console.warn("Error fetching phone:", e);
           setNoPhoneRegistered(true);
+        } finally {
+          setCheckingPhone(false);
         }
-        setCheckingPhone(false);
       };
       getPhone();
     }
