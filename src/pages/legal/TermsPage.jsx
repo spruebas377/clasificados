@@ -212,7 +212,7 @@ export default function TermsPage() {
               <h2>13. Contacto</h2>
               <p>
                 Para preguntas sobre estos términos, contáctanos en:{" "}
-                <strong>legal@clasiform.com.ar</strong>
+                <strong>spruebas377@yahoo.com</strong>
               </p>
             </section>
           </div>

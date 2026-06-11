@@ -157,6 +157,9 @@ function Header({ onSearch, onShowAuth, onShowCategories, onExplore, onShowMyAds
                   <Link to="/mis-preguntas" className="dropdown-item" onClick={closeMenu}>
                     <i className="fas fa-comments"></i> Mis preguntas
                   </Link>
+                  <Link to="/mis-favoritos" className="dropdown-item" onClick={closeMenu}>
+                    <i className="fas fa-heart"></i> Mis favoritos
+                  </Link>
                 </div>
               </div>
             )}

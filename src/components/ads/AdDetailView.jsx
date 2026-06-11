@@ -4,12 +4,26 @@ import ImageViewer from '../ui/ImageViewer'
 import { formatPrice, formatDate } from '../../utils/formatters'
 import { sanitize } from '../../utils/sanitize'
 import { getCategoryImage } from '../../utils/categoryImages'
+import { useAuth } from '../../context/AuthContext'
+import { useFavorites } from '../../context/FavoritesContext'
 
 export default function AdDetailView({ ad, onRequestAuth }) {
+  const { user } = useAuth()
+  const { isFavorite, toggleFavorite } = useFavorites()
+  const favorited = isFavorite(ad.id)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showWhatsApp, setShowWhatsApp] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(false)
   const footerSentinelRef = useRef(null)
+
+  const handleFavoriteClick = useCallback(async (e) => {
+    e.stopPropagation()
+    if (!user) {
+      alert('Debes iniciar sesión para agregar este anuncio a tus favoritos.')
+      return
+    }
+    await toggleFavorite(ad.id)
+  }, [ad.id, user, toggleFavorite])
 
   const images = useMemo(() => {
     if (!ad) return []
@@ -114,8 +128,20 @@ export default function AdDetailView({ ad, onRequestAuth }) {
         {/* Info */}
         <div className="detail-info">
           <div className="detail-header">
-            <span className="badge">{ad.categorias?.nombre || 'General'}</span>
-            <h2>{sanitize(ad.titulo)}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+              <div>
+                <span className="badge">{ad.categorias?.nombre || 'General'}</span>
+                <h2 style={{ marginTop: '0.25rem' }}>{sanitize(ad.titulo)}</h2>
+              </div>
+              <button
+                onClick={handleFavoriteClick}
+                className={`btn-detail-favorite ${favorited ? 'active' : ''}`}
+                title={favorited ? "Quitar de favoritos" : "Guardar en favoritos"}
+                aria-label="Favorito"
+              >
+                <i className={`${favorited ? 'fas' : 'far'} fa-heart`}></i>
+              </button>
+            </div>
             <div className="detail-price">
               {formatPrice(ad.precio, ad.moneda)}
             </div>
@@ -129,6 +155,10 @@ export default function AdDetailView({ ad, onRequestAuth }) {
             <div className="meta-item">
               <i className="fas fa-calendar-alt"></i>
               <span>{formatDate(ad.fecha_publicacion)}</span>
+            </div>
+            <div className="meta-item">
+              <i className="fas fa-eye"></i>
+              <span>{ad.visitas || 0} visitas</span>
             </div>
           </div>
 

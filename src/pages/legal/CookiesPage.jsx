@@ -296,7 +296,7 @@ export default function CookiesPage() {
               <h2>6. Contacto</h2>
               <p>
                 Para consultas sobre cookies:{" "}
-                <strong>cookies@clasiform.com.ar</strong>
+                <strong>spruebas377@yahoo.com</strong>
               </p>
             </section>
           </div>

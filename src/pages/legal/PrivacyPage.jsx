@@ -235,7 +235,8 @@ export default function PrivacyPage() {
               </p>
               <ul>
                 <li>
-                  📧 Email: <a href="mailto:[EMAIL_ADDRESS]">[EMAIL_ADDRESS]</a>
+                  📧 Email:{" "}
+                  <a href="spruebas377@yahoo.com">spruebas377@yahoo.com</a>
                 </li>
                 <li>📞 Teléfono: +54 9 3764 65-1226</li>
               </ul>

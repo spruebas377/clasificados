@@ -52,14 +52,47 @@ export default function MyDataPage() {
   const [statusMessage, setStatusMessage] = useState({ type: "", text: "" });
   const [isChangingEmail, setIsChangingEmail] = useState(false);
 
-  // Load user data from the users table and auth
-  useEffect(() => {
-    if (user) {
-      loadUserData();
+  const saveToUsersTable = useCallback(async (data) => {
+    if (!user) return;
+
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    let result;
+    if (existingUser) {
+      result = await supabase
+        .from("users")
+        .update({
+          full_name: data.full_name,
+          phone: data.phone,
+          ciudad: data.ciudad,
+          provincia: data.provincia,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+    } else {
+      result = await supabase.from("users").insert({
+        id: user.id,
+        email: user.email,
+        full_name: data.full_name,
+        phone: data.phone,
+        ciudad: data.ciudad,
+        provincia: data.provincia,
+      });
     }
+
+    if (result.error) {
+      console.error("Error saving to users table:", result.error);
+      throw result.error;
+    }
+
+    return result;
   }, [user]);
 
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -106,47 +139,14 @@ export default function MyDataPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, saveToUsersTable]);
 
-  const saveToUsersTable = async (data) => {
-    if (!user) return;
-
-    const { data: existingUser, error: checkError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    let result;
-    if (existingUser) {
-      result = await supabase
-        .from("users")
-        .update({
-          full_name: data.full_name,
-          phone: data.phone,
-          ciudad: data.ciudad,
-          provincia: data.provincia,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
-    } else {
-      result = await supabase.from("users").insert({
-        id: user.id,
-        email: user.email,
-        full_name: data.full_name,
-        phone: data.phone,
-        ciudad: data.ciudad,
-        provincia: data.provincia,
-      });
+  // Load user data from the users table and auth
+  useEffect(() => {
+    if (user) {
+      loadUserData();
     }
-
-    if (result.error) {
-      console.error("Error saving to users table:", result.error);
-      throw result.error;
-    }
-
-    return result;
-  };
+  }, [user, loadUserData]);
 
   const saveToAuthMetadata = async (data) => {
     const { error } = await supabase.auth.updateUser({
@@ -166,7 +166,7 @@ export default function MyDataPage() {
     setIsChangingEmail(true);
 
     try {
-      const { data, error } = await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         email: newEmail,
       });
 

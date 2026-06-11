@@ -17,6 +17,9 @@ export default function AdDetailPage() {
     async function fetchAd() {
       setLoading(true)
       try {
+        // Incrementar visitas
+        await supabase.rpc('incrementar_visitas', { ad_id: id })
+
         const { data, error } = await supabase
           .from('anuncios')
           .select('*, categorias(nombre)')

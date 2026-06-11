@@ -99,7 +99,7 @@ export default function LegalNoticePage() {
               <h2>Contacto para Notificaciones</h2>
               <p>
                 Para comunicaciones oficiales o notificaciones judiciales:{" "}
-                <strong>legal@clasiform.com.ar</strong>
+                <strong>spruebas377@yahoo.com</strong>
               </p>
             </section>
           </div>
