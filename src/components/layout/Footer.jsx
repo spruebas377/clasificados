@@ -47,7 +47,7 @@ function Footer() {
           <p className="footer__small">
             Hecho con{" "}
             <i className="fas fa-heart" style={{ color: "#ff4757" }}></i> en
-            Argentina
+            Formosa
           </p>
         </div>
       </div>
