@@ -66,8 +66,10 @@ export default function AgeVerificationModal({
           <button
             onClick={handleReject}
             style={{
+              fontFamily:
+                "'Outfit', 'Inter', system-ui, -apple-system, sans-serif",
               padding: "0.75rem 1.5rem",
-              background: "var(--surface)",
+              background: "var(--text-light)",
               border: "1px solid var(--border-light)",
               borderRadius: "var(--radius-md)",
               cursor: "pointer",
@@ -79,6 +81,8 @@ export default function AgeVerificationModal({
           <button
             onClick={handleConfirm}
             style={{
+              fontFamily:
+                "'Outfit', 'Inter', system-ui, -apple-system, sans-serif",
               padding: "0.75rem 1.5rem",
               background: "var(--primary)",
               color: "white",

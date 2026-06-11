@@ -11,6 +11,9 @@ export function getCategoryImage(categoryName = '', categoryIcon = '') {
   const icon = categoryIcon.toLowerCase().trim()
 
   // 1. Check by Category Name
+  if (name.includes('+18') || name.includes('adulto') || name.includes('acompañante') || name.includes('citas')) {
+    return 'https://media.istockphoto.com/id/894875560/vector/under-eighteen-prohibition-sign-in-crossed-out-red-circle-vector-icon.jpg?s=612x612&w=0&k=20&c=ZnSowrwGMJXVex2DdJKyd6JfgOL8RU6xR3I8seZje4A='
+  }
   if (name.includes('vehic') || name.includes('auto') || name.includes('moto') || name.includes('car')) {
     return 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&auto=format&fit=crop&q=80'
   }

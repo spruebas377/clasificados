@@ -188,13 +188,36 @@ export default function CookiesPage() {
             <section>
               <h2>3. Gestión de Cookies</h2>
               <div className="cookie-buttons">
-                <button onClick={acceptAll} className="btn-primary">
+                <button
+                  onClick={acceptAll}
+                  className="btn-primary"
+                  style={{
+                    marginRight: "1rem",
+                    fontFamily:
+                      "'Outfit', 'Inter', system-ui, -apple-system, sans-serif",
+                  }}
+                >
                   Aceptar todas
                 </button>
-                <button onClick={rejectAll} className="btn-secondary">
+                <button
+                  onClick={rejectAll}
+                  className="btn-secondary"
+                  style={{
+                    marginRight: "1rem",
+                    fontFamily:
+                      "'Outfit', 'Inter', system-ui, -apple-system, sans-serif",
+                  }}
+                >
                   Rechazar todas
                 </button>
-                <button onClick={savePreferences} className="btn-outline">
+                <button
+                  onClick={savePreferences}
+                  className="btn-outline"
+                  style={{
+                    fontFamily:
+                      "'Outfit', 'Inter', system-ui, -apple-system, sans-serif",
+                  }}
+                >
                   Guardar preferencias
                 </button>
               </div>
