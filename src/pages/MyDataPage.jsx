@@ -38,6 +38,7 @@ const PROVINCIAS_ARGENTINA = [
 export default function MyDataPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading, refreshUser } = useAuth();
+  const isOAuthUser = user?.app_metadata?.provider && user?.app_metadata?.provider !== "email";
 
   const [authModal, setAuthModal] = useState({ open: false, mode: "login" });
   const [formData, setFormData] = useState({
@@ -51,6 +52,77 @@ export default function MyDataPage() {
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ type: "", text: "" });
   const [isChangingEmail, setIsChangingEmail] = useState(false);
+
+  // Password change state hooks
+  const [passwordForm, setPasswordForm] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordStatus, setPasswordStatus] = useState({ type: "", text: "" });
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handlePasswordInputChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+
+    const { newPassword, confirmPassword } = passwordForm;
+
+    if (newPassword.length < 6) {
+      setPasswordStatus({
+        type: "error",
+        text: "La contraseña debe tener al menos 6 caracteres.",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordStatus({
+        type: "error",
+        text: "Las contraseñas no coinciden.",
+      });
+      return;
+    }
+
+    setPasswordLoading(true);
+    setPasswordStatus({ type: "", text: "" });
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      setPasswordStatus({
+        type: "success",
+        text: "¡Tu contraseña ha sido actualizada con éxito!",
+      });
+
+      setPasswordForm({ newPassword: "", confirmPassword: "" });
+
+      setTimeout(() => {
+        setPasswordStatus({ type: "", text: "" });
+      }, 5000);
+    } catch (err) {
+      console.error("Error al cambiar contraseña:", err);
+      setPasswordStatus({
+        type: "error",
+        text: err.message || "Ocurrió un error al intentar cambiar la contraseña.",
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const saveToUsersTable = useCallback(async (data) => {
     if (!user) return;
@@ -174,7 +246,7 @@ export default function MyDataPage() {
 
       setStatusMessage({
         type: "success",
-        text: `📧 Se ha enviado un email de verificación a ${newEmail}. Revisa tu bandeja de entrada (y spam) y haz clic en el enlace para confirmar el cambio. El correo se actualizará automáticamente después de la confirmación.`,
+        text: `📧 Se ha enviado un correo de verificación a ${newEmail} y/o a tu correo actual.\n\n⚠️ IMPORTANTE: Dependiendo de la configuración de seguridad, es posible que debas hacer clic en el enlace de confirmación enviado a AMBAS direcciones de correo (el actual y el nuevo) para que el cambio se complete.`,
       });
 
       return true;
@@ -427,8 +499,19 @@ export default function MyDataPage() {
                   onChange={handleInputChange}
                   placeholder="tu@email.com"
                   required
-                  disabled={isChangingEmail}
+                  disabled={isChangingEmail || isOAuthUser}
                 />
+                {isOAuthUser && (
+                  <small
+                    style={{
+                      color: "var(--text-muted)",
+                      marginTop: "0.25rem",
+                      display: "block",
+                    }}
+                  >
+                    <i className="fas fa-info-circle"></i> Tu correo electrónico está asociado a tu cuenta de {user.app_metadata.provider === "google" ? "Google" : user.app_metadata.provider} y no puede cambiarse desde aquí.
+                  </small>
+                )}
                 {isChangingEmail && (
                   <small
                     style={{
@@ -569,6 +652,153 @@ export default function MyDataPage() {
               ></i>
               Email actual: <strong>{originalEmail}</strong>
             </div>
+          </div>
+
+          {/* Card de Cambio de Contraseña */}
+          <div
+            style={{
+              background: "var(--surface)",
+              borderRadius: "var(--radius-lg)",
+              padding: "2.5rem",
+              boxShadow: "var(--shadow-md)",
+              marginTop: "2rem",
+            }}
+          >
+            <h2 style={{ fontSize: "1.75rem", fontWeight: 700, marginBottom: "1.5rem" }}>
+              <i className="fas fa-key" style={{ marginRight: "0.75rem", color: "var(--primary)" }}></i>
+              Cambiar Contraseña
+            </h2>
+
+            {isOAuthUser ? (
+              <div
+                style={{
+                  padding: "1rem",
+                  borderRadius: "var(--radius-md)",
+                  backgroundColor: "rgba(59, 130, 246, 0.05)",
+                  fontSize: "0.9rem",
+                  color: "var(--text-muted)",
+                  border: "1px solid rgba(59, 130, 246, 0.1)",
+                }}
+              >
+                <i className="fas fa-info-circle" style={{ color: "var(--primary)", marginRight: "0.5rem" }}></i>
+                Tu cuenta está vinculada con {user.app_metadata.provider === "google" ? "Google" : user.app_metadata.provider}. No es necesario que configures una contraseña local.
+              </div>
+            ) : (
+              <form onSubmit={handlePasswordSubmit} className="publish-form" style={{ padding: 0 }}>
+                {passwordStatus.text && (
+                  <div
+                    style={{
+                      padding: "1rem 1.25rem",
+                      borderRadius: "var(--radius-md)",
+                      marginBottom: "1.5rem",
+                      backgroundColor:
+                        passwordStatus.type === "success"
+                          ? "rgba(16, 185, 129, 0.1)"
+                          : "rgba(239, 68, 68, 0.1)",
+                      color:
+                        passwordStatus.type === "success"
+                          ? "var(--success)"
+                          : "#ef4444",
+                      border: `1px solid ${passwordStatus.type === "success" ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)"}`,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <i
+                      className={`fas ${passwordStatus.type === "success" ? "fa-circle-check" : "fa-circle-xmark"}`}
+                      style={{ marginRight: "0.5rem" }}
+                    ></i>
+                    <span>{passwordStatus.text}</span>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label htmlFor="newPassword">Nueva Contraseña</label>
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      id="newPassword"
+                      name="newPassword"
+                      value={passwordForm.newPassword}
+                      onChange={handlePasswordInputChange}
+                      placeholder="Mínimo 6 caracteres"
+                      required
+                      style={{ paddingRight: "2.5rem", width: "100%" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      style={{
+                        position: "absolute",
+                        right: "0.75rem",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--text-muted)",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      title={showNewPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      <i className={`fas ${showNewPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirmar Nueva Contraseña</label>
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={passwordForm.confirmPassword}
+                      onChange={handlePasswordInputChange}
+                      placeholder="Repite tu nueva contraseña"
+                      required
+                      style={{ paddingRight: "2.5rem", width: "100%" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{
+                        position: "absolute",
+                        right: "0.75rem",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--text-muted)",
+                        padding: "0.25rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      title={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      <i className={`fas ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn-submit"
+                  disabled={passwordLoading}
+                  style={{ marginTop: "1rem" }}
+                >
+                  {passwordLoading ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i> Actualizando...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-lock"></i> Actualizar Contraseña
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </main>
