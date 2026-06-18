@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Header from "../../components/layout/Header";
 import Footer from "../../components/layout/Footer";
+const emailAdmin = import.meta.env.VITE_ADMIN_EMAIL;
 
 export default function CookiesPage() {
   const [cookieSettings, setCookieSettings] = useState({
@@ -294,10 +295,7 @@ export default function CookiesPage() {
 
             <section>
               <h2>6. Contacto</h2>
-              <p>
-                Para consultas sobre cookies:{" "}
-                <strong>spruebas377@yahoo.com</strong>
-              </p>
+              <p>Para consultas sobre cookies: {emailAdmin}</p>
             </section>
           </div>
         </div>

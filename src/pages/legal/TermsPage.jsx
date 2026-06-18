@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import Header from "../../components/layout/Header";
 import Footer from "../../components/layout/Footer";
 
+const emailAdmin = import.meta.env.VITE_ADMIN_EMAIL;
+
 export default function TermsPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -188,7 +190,7 @@ export default function TermsPage() {
               <h2>12. Contacto</h2>
               <p>
                 Para preguntas sobre estos términos, contáctanos en:{" "}
-                <strong>spruebas377@yahoo.com</strong>
+                <strong>{emailAdmin}</strong>
               </p>
             </section>
           </div>

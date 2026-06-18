@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import Header from "../../components/layout/Header";
 import Footer from "../../components/layout/Footer";
+const emailAdmin = import.meta.env.VITE_ADMIN_EMAIL;
 
 export default function PrivacyPage() {
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function PrivacyPage() {
               <p>
                 <strong>Titular del sitio:</strong> ClasiForm
                 <br />
-                <strong>Email de contacto:</strong> privacidad@clasiform.com.ar
+                <strong>Email de contacto:</strong> {emailAdmin}
                 <br />
                 <strong>Actividad:</strong> Plataforma de clasificados online
               </p>
@@ -163,7 +164,7 @@ export default function PrivacyPage() {
               </ul>
               <p>
                 Para ejercer estos derechos, contáctanos en:{" "}
-                <strong>privacidad@clasiform.com.ar</strong>
+                <strong>{emailAdmin}</strong>
               </p>
             </section>
 
@@ -235,8 +236,7 @@ export default function PrivacyPage() {
               </p>
               <ul>
                 <li>
-                  📧 Email:{" "}
-                  <a href="spruebas377@yahoo.com">spruebas377@yahoo.com</a>
+                  📧 Email: <a href={emailAdmin}>{emailAdmin}</a>
                 </li>
                 <li>📞 Teléfono: +54 9 3764 65-1226</li>
               </ul>

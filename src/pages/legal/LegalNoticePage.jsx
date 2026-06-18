@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import Header from "../../components/layout/Header";
 import Footer from "../../components/layout/Footer";
 
+const emailAdmin = import.meta.env.VITE_ADMIN_EMAIL;
+
 export default function LegalNoticePage() {
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -40,7 +42,7 @@ export default function LegalNoticePage() {
                   <strong>Domicilio:</strong> [Tu dirección completa]
                 </li>
                 <li>
-                  <strong>Email:</strong> info@clasiform.com.ar
+                  <strong>Email:</strong> {emailAdmin}
                 </li>
                 <li>
                   <strong>Teléfono:</strong> [Tu teléfono]
@@ -99,7 +101,7 @@ export default function LegalNoticePage() {
               <h2>Contacto para Notificaciones</h2>
               <p>
                 Para comunicaciones oficiales o notificaciones judiciales:{" "}
-                <strong>spruebas377@yahoo.com</strong>
+                <strong>{emailAdmin}</strong>
               </p>
             </section>
           </div>
