@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react'
 
-export default function Modal({ isOpen, onClose, children, maxWidth = '550px', noPadding = false }) {
+export default function Modal({ isOpen, onClose, children, maxWidth = '550px', noPadding = false, className = '' }) {
   // Close on Escape key
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') onClose()
@@ -20,7 +20,7 @@ export default function Modal({ isOpen, onClose, children, maxWidth = '550px', n
   if (!isOpen) return null
 
   return (
-    <div className="modal active" onClick={onClose}>
+    <div className={`modal active ${className}`} onClick={onClose}>
       <div
         className="modal__content"
         style={{ maxWidth, ...(noPadding ? { padding: 0, overflow: 'hidden' } : {}) }}

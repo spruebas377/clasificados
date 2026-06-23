@@ -5,7 +5,7 @@ export default function AdDetailModal({ ad, isOpen, onClose, onRequestAuth }) {
   if (!ad) return null
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="900px" noPadding>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="900px" noPadding className="modal-detail">
       <button 
         className="modal__close detail-close" 
         onClick={onClose}
