@@ -9,9 +9,12 @@ import PrivacyPage from "./pages/legal/PrivacyPage";
 import TermsPage from "./pages/legal/TermsPage";
 import CookiesPage from "./pages/legal/CookiesPage";
 
+import ScrollToTop from "./components/layout/ScrollToTop";
+
 export default function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/ad/:id" element={<AdDetailPage />} />
