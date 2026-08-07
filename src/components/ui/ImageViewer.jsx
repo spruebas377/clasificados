@@ -1,10 +1,14 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 export default function ImageViewer({ src, alt, isOpen, onClose }) {
   const [zoom, setZoom] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+
+  // Refs for tracking drag and pinch touch interactions
+  const dragStartRef = useRef({ x: 0, y: 0 })
+  const pinchStartDistRef = useRef(null)
+  const initialZoomRef = useRef(1)
 
   useEffect(() => {
     if (isOpen) {
@@ -20,25 +24,90 @@ export default function ImageViewer({ src, alt, isOpen, onClose }) {
     if (!isOpen) return
     e.preventDefault()
     const delta = e.deltaY > 0 ? -0.2 : 0.2
-    setZoom((prev) => Math.min(Math.max(1, prev + delta), 4))
+    setZoom((prev) => {
+      const nextZoom = Math.min(Math.max(1, prev + delta), 4)
+      if (nextZoom === 1) setPosition({ x: 0, y: 0 })
+      return nextZoom
+    })
   }, [isOpen])
 
+  // --- Mouse Handlers ---
   const handleMouseDown = (e) => {
     if (zoom <= 1) return
     setIsDragging(true)
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
+    dragStartRef.current = { x: e.clientX - position.x, y: e.clientY - position.y }
   }
 
   const handleMouseMove = (e) => {
     if (!isDragging) return
     setPosition({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
+      x: e.clientX - dragStartRef.current.x,
+      y: e.clientY - dragStartRef.current.y,
     })
   }
 
   const handleMouseUp = () => {
     setIsDragging(false)
+  }
+
+  // --- Touch Handlers (Mobile) ---
+  const getTouchDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX
+    const dy = touches[0].clientY - touches[1].clientY
+    return Math.hypot(dx, dy)
+  }
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1 && zoom > 1) {
+      setIsDragging(true)
+      dragStartRef.current = {
+        x: e.touches[0].clientX - position.x,
+        y: e.touches[0].clientY - position.y,
+      }
+    } else if (e.touches.length === 2) {
+      setIsDragging(false)
+      pinchStartDistRef.current = getTouchDistance(e.touches)
+      initialZoomRef.current = zoom
+    }
+  }
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 1 && isDragging && zoom > 1) {
+      setPosition({
+        x: e.touches[0].clientX - dragStartRef.current.x,
+        y: e.touches[0].clientY - dragStartRef.current.y,
+      })
+    } else if (e.touches.length === 2 && pinchStartDistRef.current) {
+      const currentDist = getTouchDistance(e.touches)
+      const scale = currentDist / pinchStartDistRef.current
+      const nextZoom = Math.min(Math.max(1, initialZoomRef.current * scale), 4)
+      setZoom(nextZoom)
+      if (nextZoom === 1) {
+        setPosition({ x: 0, y: 0 })
+      }
+    }
+  }
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length === 0) {
+      setIsDragging(false)
+      pinchStartDistRef.current = null
+    } else if (e.touches.length === 1 && zoom > 1) {
+      pinchStartDistRef.current = null
+      setIsDragging(true)
+      dragStartRef.current = {
+        x: e.touches[0].clientX - position.x,
+        y: e.touches[0].clientY - position.y,
+      }
+    }
+  }
+
+  const handleZoomChange = (delta) => {
+    setZoom((prev) => {
+      const nextZoom = Math.min(Math.max(1, prev + delta), 4)
+      if (nextZoom === 1) setPosition({ x: 0, y: 0 })
+      return nextZoom
+    })
   }
 
   if (!isOpen) return null
@@ -50,10 +119,10 @@ export default function ImageViewer({ src, alt, isOpen, onClose }) {
       onWheel={handleWheel}
     >
       <div className="image-viewer-controls" onClick={(e) => e.stopPropagation()}>
-        <button onClick={() => setZoom(prev => Math.min(prev + 0.5, 4))} aria-label="Aumentar zoom">
+        <button onClick={() => handleZoomChange(0.5)} aria-label="Aumentar zoom">
           <i className="fas fa-search-plus"></i>
         </button>
-        <button onClick={() => setZoom(prev => Math.max(prev - 0.5, 1))} aria-label="Disminuir zoom">
+        <button onClick={() => handleZoomChange(-0.5)} aria-label="Disminuir zoom">
           <i className="fas fa-search-minus"></i>
         </button>
         <button onClick={onClose} aria-label="Cerrar">
@@ -68,7 +137,13 @@ export default function ImageViewer({ src, alt, isOpen, onClose }) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        style={{ cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ 
+          cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+          touchAction: 'none'
+        }}
       >
         <img
           src={src}
@@ -82,7 +157,9 @@ export default function ImageViewer({ src, alt, isOpen, onClose }) {
       </div>
       
       <div className="image-viewer-hint">
-        {zoom > 1 ? 'Arrastra para mover • Usa la rueda para zoom' : 'Usa la rueda o los botones para zoom'}
+        {zoom > 1
+          ? 'Arrastra para mover • Usa los botones o pellizca para zoom'
+          : 'Usa los botones, la rueda o pellizca para zoom'}
       </div>
     </div>
   )
