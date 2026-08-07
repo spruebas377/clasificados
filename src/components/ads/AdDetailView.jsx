@@ -12,9 +12,7 @@ export default function AdDetailView({ ad, onRequestAuth }) {
   const { isFavorite, toggleFavorite } = useFavorites()
   const favorited = isFavorite(ad.id)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [showWhatsApp, setShowWhatsApp] = useState(false)
   const [viewerOpen, setViewerOpen] = useState(false)
-  const footerSentinelRef = useRef(null)
 
   const handleFavoriteClick = useCallback(async (e) => {
     e.stopPropagation()
@@ -41,28 +39,25 @@ export default function AdDetailView({ ad, onRequestAuth }) {
     setCurrentImageIndex(index)
   }, [])
 
-  // Intersection Observer to show WhatsApp button at the end of the content
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setShowWhatsApp(true)
-        }
-      },
-      { threshold: 0.1, rootMargin: '0px 0px 50px 0px' }
-    )
+  const touchStartX = useRef(null)
 
-    const currentSentinel = footerSentinelRef.current
-    if (currentSentinel) {
-      observer.observe(currentSentinel)
-    }
+  const handleTouchStart = useCallback((e) => {
+    touchStartX.current = e.touches[0].clientX
+  }, [])
 
-    return () => {
-      if (currentSentinel) {
-        observer.unobserve(currentSentinel)
+  const handleTouchEnd = useCallback((e) => {
+    if (touchStartX.current === null) return
+    const touchEndX = e.changedTouches[0].clientX
+    const diff = touchStartX.current - touchEndX
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        changeImage(1)
+      } else {
+        changeImage(-1)
       }
     }
-  }, [ad?.id])
+    touchStartX.current = null
+  }, [changeImage])
 
   const handleNativeShare = useCallback(async () => {
     const shareUrl = window.location.origin + '/ad/' + ad.id
@@ -88,7 +83,11 @@ export default function AdDetailView({ ad, onRequestAuth }) {
       <div className="detail-grid">
         {/* Gallery */}
         <div className="detail-gallery">
-          <div className="gallery-main">
+          <div 
+            className="gallery-main" 
+            onTouchStart={handleTouchStart} 
+            onTouchEnd={handleTouchEnd}
+          >
             <img
               src={images[currentImageIndex]}
               alt={sanitize(ad.titulo)}
@@ -207,10 +206,7 @@ export default function AdDetailView({ ad, onRequestAuth }) {
             </div>
           </div>
 
-          {/* Sentinel for WhatsApp button visibility */}
-          <div ref={footerSentinelRef} className="footer-sentinel" style={{ height: '1px', marginTop: '-1px' }} />
-
-          <div className={`detail-footer ${showWhatsApp ? 'visible' : ''}`}>
+          <div className="detail-footer visible">
             <a
               href={`https://wa.me/${ad.contacto}?text=Hola, estoy interesado en tu anuncio: ${sanitize(ad.titulo)}`}
               target="_blank"
