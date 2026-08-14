@@ -59,7 +59,7 @@ export function useAds() {
         )
       }
 
-      // Sorting
+      // Sorting: Priorizar anuncios destacados primero
       let orderColumn = 'fecha_publicacion'
       let ascending = false
 
@@ -71,10 +71,29 @@ export function useAds() {
         ascending = false
       }
 
-      const { data, error } = await query.order(orderColumn, { ascending })
+      const { data, error } = await query
+        .order('destacado', { ascending: false })
+        .order(orderColumn, { ascending })
 
       if (error) throw error
-      setAds(data || [])
+
+      const now = new Date()
+      // Procesar anuncios para verificar si el destacado sigue activo (destacado_hasta > ahora)
+      const processedAds = (data || []).map((ad) => {
+        const isFeaturedVigente = ad.destacado_hasta
+          ? new Date(ad.destacado_hasta) > now
+          : Boolean(ad.destacado)
+
+        return {
+          ...ad,
+          destacado: isFeaturedVigente,
+        }
+      })
+
+      // Reordenar para asegurar que los con destacado vigente queden primero
+      processedAds.sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0))
+
+      setAds(processedAds)
     } catch (e) {
       console.error('Error fetching ads:', e)
       setAds([])
@@ -216,6 +235,12 @@ export function useAds() {
       payload.imagenes = imageUrls
     }
 
+    if (payload.destacado) {
+      const days = payload.durationDays || 7
+      payload.destacado_hasta = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+      delete payload.durationDays
+    }
+
     if (editingId) {
       const { error } = await supabase
         .from('anuncios')
@@ -228,5 +253,111 @@ export function useAds() {
     }
   }, [])
 
-  return { ads, loading, fetchAds, deleteAd, publishAd }
+  const toggleFeaturedAd = useCallback(async (id, isFeatured = true, days = 7) => {
+    try {
+      const updateData = { destacado: isFeatured }
+      if (isFeatured) {
+        const expirationDate = new Date(Date.now() + (days || 7) * 24 * 60 * 60 * 1000).toISOString()
+        updateData.destacado_hasta = expirationDate
+        updateData.pago_estado = 'aprobado'
+      } else {
+        updateData.destacado_hasta = null
+      }
+
+      const { error } = await supabase
+        .from('anuncios')
+        .update(updateData)
+        .eq('id', id)
+
+      if (error) throw error
+      return true
+    } catch (e) {
+      console.error('Error updating featured status:', e)
+      alert(`Error al actualizar el destacado: ${e.message}`)
+      return false
+    }
+  }, [])
+
+  const requestManualFeatured = useCallback(async (id, days = 7) => {
+    try {
+      const { error } = await supabase
+        .from('anuncios')
+        .update({
+          pago_estado: 'pendiente',
+          pago_dias: days || 7,
+          destacado: false,
+        })
+        .eq('id', id)
+
+      if (error) throw error
+      return true
+    } catch (e) {
+      console.error('Error requesting manual featured status:', e)
+      alert(`Error al registrar la solicitud de pago: ${e.message}`)
+      return false
+    }
+  }, [])
+
+  const approveFeaturedPayment = useCallback(async (id) => {
+    try {
+      // 1. Obtener días del plan desde el anuncio
+      const { data: ad, error: fetchErr } = await supabase
+        .from('anuncios')
+        .select('pago_dias')
+        .eq('id', id)
+        .single()
+
+      if (fetchErr) throw fetchErr
+
+      const days = ad?.pago_dias || 7
+      const expirationDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+
+      const { error } = await supabase
+        .from('anuncios')
+        .update({
+          destacado: true,
+          destacado_hasta: expirationDate,
+          pago_estado: 'aprobado',
+        })
+        .eq('id', id)
+
+      if (error) throw error
+      return true
+    } catch (e) {
+      console.error('Error approving payment:', e)
+      alert(`Error al aprobar el pago: ${e.message}`)
+      return false
+    }
+  }, [])
+
+  const rejectFeaturedPayment = useCallback(async (id) => {
+    try {
+      const { error } = await supabase
+        .from('anuncios')
+        .update({
+          pago_estado: 'rechazado',
+          destacado: false,
+        })
+        .eq('id', id)
+
+      if (error) throw error
+      return true
+    } catch (e) {
+      console.error('Error rejecting payment:', e)
+      alert(`Error al rechazar la solicitud: ${e.message}`)
+      return false
+    }
+  }, [])
+
+  return {
+    ads,
+    loading,
+    fetchAds,
+    deleteAd,
+    publishAd,
+    toggleFeaturedAd,
+    requestManualFeatured,
+    approveFeaturedPayment,
+    rejectFeaturedPayment,
+  }
 }

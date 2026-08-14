@@ -1,7 +1,17 @@
 import AdCard from './AdCard'
 import LoadingSpinner from '../ui/LoadingSpinner'
 
-export default function AdGrid({ ads, loading, onlyMine, onOpenDetail, onEdit, onDelete }) {
+export default function AdGrid({
+  ads,
+  loading,
+  onlyMine,
+  onOpenDetail,
+  onEdit,
+  onDelete,
+  onFeatureAd,
+  onApprovePayment,
+  onRejectPayment,
+}) {
   return (
     <main className="main-content">
       <div className="container">
@@ -29,6 +39,9 @@ export default function AdGrid({ ads, loading, onlyMine, onOpenDetail, onEdit, o
                 onOpenDetail={onOpenDetail}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onFeatureAd={onFeatureAd}
+                onApprovePayment={onApprovePayment}
+                onRejectPayment={onRejectPayment}
               />
             ))
           )}

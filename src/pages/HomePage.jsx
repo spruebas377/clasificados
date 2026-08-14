@@ -14,6 +14,7 @@ import CategoriesModal from "../components/categories/CategoriesModal";
 import FilterSection from "../components/filters/FilterSection";
 import AdGrid from "../components/ads/AdGrid";
 import PublishModal from "../components/ads/PublishModal";
+import PremiumPaymentModal from "../components/ads/PremiumPaymentModal";
 import AuthModal from "../components/auth/AuthModal";
 import AgeVerificationModal from "../components/ui/AgeVerificationModal";
 
@@ -86,7 +87,17 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { categories } = useCategories();
-  const { ads, loading: adsLoading, fetchAds, deleteAd, publishAd } = useAds();
+  const {
+    ads,
+    loading: adsLoading,
+    fetchAds,
+    deleteAd,
+    publishAd,
+    toggleFeaturedAd,
+    requestManualFeatured,
+    approveFeaturedPayment,
+    rejectFeaturedPayment,
+  } = useAds();
   const { provinces, cities, loadingCities, fetchProvinces, fetchCities } =
     useGeography();
 
@@ -103,6 +114,7 @@ export default function HomePage() {
   const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [editingAd, setEditingAd] = useState(null);
+  const [paymentModal, setPaymentModal] = useState({ open: false, ad: null });
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -150,7 +162,8 @@ export default function HomePage() {
         document.getElementById("classifiedsGrid");
       if (target) {
         const yOffset = -120;
-        const y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        const y =
+          target.getBoundingClientRect().top + window.pageYOffset + yOffset;
         window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
       }
     }, 100);
@@ -276,8 +289,77 @@ export default function HomePage() {
       setPublishModalOpen(false);
       setEditingAd(null);
       fetchAds({ ...filters, userId: user?.id });
+
+      if (adData.destacado) {
+        setPaymentModal({
+          open: true,
+          ad: { titulo: adData.titulo, id: editingId || null },
+        });
+      }
     },
     [publishAd, fetchAds, filters, user?.id],
+  );
+
+  // Feature existing ad handler
+  const handleFeatureAd = useCallback((ad) => {
+    setPaymentModal({ open: true, ad });
+  }, []);
+
+  // Request manual payment handler (Pone el pago en estado pendiente)
+  const handleRequestManualPayment = useCallback(
+    async (selectedPlan) => {
+      const days = selectedPlan?.days || 7;
+      if (paymentModal.ad?.id) {
+        const success = await requestManualFeatured(paymentModal.ad.id, days);
+        if (success) {
+          alert(
+            "⌛ ¡Solicitud registrada! Tu pago por transferencia quedó en estado Pendiente. Una vez verificado por el administrador, se activará tu destacado automáticamente.",
+          );
+          fetchAds({ ...filters, userId: user?.id });
+        }
+      }
+      setPaymentModal({ open: false, ad: null });
+    },
+    [paymentModal.ad, requestManualFeatured, fetchAds, filters, user?.id],
+  );
+
+  // Confirm payment & feature ad in database (Direct auto approval)
+  const handleConfirmPayment = useCallback(
+    async (selectedPlan) => {
+      const days = selectedPlan?.days || 7;
+      if (paymentModal.ad?.id) {
+        const success = await toggleFeaturedAd(paymentModal.ad.id, true, days);
+        if (success) {
+          fetchAds({ ...filters, userId: user?.id });
+        }
+      }
+      setPaymentModal({ open: false, ad: null });
+    },
+    [paymentModal.ad, toggleFeaturedAd, fetchAds, filters, user?.id],
+  );
+
+  // Admin approval handler (1 Clic por el SuperUser)
+  const handleApprovePayment = useCallback(
+    async (adId) => {
+      const success = await approveFeaturedPayment(adId);
+      if (success) {
+        alert("✅ ¡Pago aprobado! La publicación ha sido destacada.");
+        fetchAds({ ...filters, userId: user?.id });
+      }
+    },
+    [approveFeaturedPayment, fetchAds, filters, user?.id],
+  );
+
+  // Admin rejection handler
+  const handleRejectPayment = useCallback(
+    async (adId) => {
+      const success = await rejectFeaturedPayment(adId);
+      if (success) {
+        alert("❌ Solicitud de pago rechazada.");
+        fetchAds({ ...filters, userId: user?.id });
+      }
+    },
+    [rejectFeaturedPayment, fetchAds, filters, user?.id],
   );
 
   // Auth
@@ -328,6 +410,9 @@ export default function HomePage() {
         onOpenDetail={handleOpenDetail}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onFeatureAd={handleFeatureAd}
+        onApprovePayment={handleApprovePayment}
+        onRejectPayment={handleRejectPayment}
       />
 
       <Footer />
@@ -359,6 +444,15 @@ export default function HomePage() {
         onPublish={handlePublish}
         onProvinceChange={handlePublishProvinceChange}
         editingAd={editingAd}
+      />
+
+      <PremiumPaymentModal
+        isOpen={paymentModal.open}
+        onClose={() => setPaymentModal({ open: false, ad: null })}
+        onConfirmPayment={handleConfirmPayment}
+        onRequestManualPayment={handleRequestManualPayment}
+        adTitle={paymentModal.ad?.titulo || ""}
+        adId={paymentModal.ad?.id || null}
       />
 
       {/* Age Verification Modal */}

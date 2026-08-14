@@ -32,6 +32,7 @@ export default function PublishModal({
     city: "",
     contact: "",
     description: "",
+    isFeatured: false,
   });
 
   // Populate form when editing
@@ -46,6 +47,7 @@ export default function PublishModal({
         city: editingAd.ubicacion || "",
         contact: editingAd.contacto || "",
         description: editingAd.descripcion || "",
+        isFeatured: editingAd.destacado || false,
       });
 
       // Load province cities
@@ -117,6 +119,7 @@ export default function PublishModal({
       city: "",
       contact: "",
       description: "",
+      isFeatured: false,
     });
     setPreviews([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -168,6 +171,7 @@ export default function PublishModal({
           provincia: form.province,
           ubicacion: form.city,
           contacto: form.contact,
+          destacado: form.isFeatured,
           user_id: user.id,
         };
 
@@ -421,6 +425,24 @@ export default function PublishModal({
             value={form.description}
             onChange={(e) => handleChange("description", e.target.value)}
           />
+        </div>
+
+        <div className="form-group featured-option-box">
+          <label className="featured-checkbox-label">
+            <input
+              type="checkbox"
+              checked={form.isFeatured}
+              onChange={(e) => handleChange("isFeatured", e.target.checked)}
+            />
+            <div className="featured-checkbox-info">
+              <span className="featured-title">
+                <i className="fas fa-star" style={{ color: "#f59e0b" }}></i> Publicación Destacada (Premium)
+              </span>
+              <span className="featured-subtitle">
+                Aparecerá en los primeros lugares de búsqueda con la etiqueta distintiva de Destacado.
+              </span>
+            </div>
+          </label>
         </div>
 
         <button type="submit" className="btn-submit" disabled={submitting}>

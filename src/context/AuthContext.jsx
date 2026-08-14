@@ -5,8 +5,10 @@ import {
   useEffect,
   useState,
   useCallback,
+  useMemo,
 } from "react";
 import { supabase } from "../lib/supabase";
+import { ADMIN_CONFIG } from "../config/premiumConfig";
 
 const AuthContext = createContext({});
 
@@ -17,6 +19,12 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Determinar si el usuario actual es superusuario/administrador
+  const isSuperUser = useMemo(() => {
+    if (!user?.email) return false;
+    return ADMIN_CONFIG.adminEmails.includes(user.email.toLowerCase());
+  }, [user]);
 
   // Función para refrescar el usuario actual
   const refreshUser = useCallback(async () => {
@@ -135,14 +143,15 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     loading,
+    isSuperUser,
     signUp,
     signInWithPassword,
     signInWithGoogle,
     signInWithFacebook,
     signOut,
     getUserName,
-    refreshUser, // ← Nueva función
-    getUserFromTable, // ← Nueva función
+    refreshUser,
+    getUserFromTable,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
