@@ -1,35 +1,25 @@
-import { memo, useRef, useCallback } from 'react'
+import { memo, useState, useCallback } from 'react'
 
 function SearchBar({ onSearch, className = '', placeholder = 'Buscar por título, descripción o categoría...' }) {
-  const inputRef = useRef(null)
-  const debounceRef = useRef(null)
+  const [term, setTerm] = useState('')
 
-  const handleInput = useCallback((e) => {
-    const val = e.target.value
-    clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      onSearch(val)
-    }, 300)
-  }, [onSearch])
-
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Enter') {
-      clearTimeout(debounceRef.current)
-      onSearch(e.target.value)
-    }
-  }, [onSearch])
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault()
+    onSearch(term)
+  }, [onSearch, term])
 
   return (
-    <div className={`search-bar ${className}`}>
-      <i className="fas fa-search"></i>
+    <form className={`search-bar ${className}`} onSubmit={handleSubmit}>
+      <button type="submit" className="search-bar__btn" aria-label="Buscar" title="Buscar">
+        <i className="fas fa-search"></i>
+      </button>
       <input
-        ref={inputRef}
         type="text"
+        value={term}
+        onChange={(e) => setTerm(e.target.value)}
         placeholder={placeholder}
-        onChange={handleInput}
-        onKeyDown={handleKeyDown}
       />
-    </div>
+    </form>
   )
 }
 

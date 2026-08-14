@@ -144,6 +144,16 @@ export default function HomePage() {
   // Search handler
   const handleSearch = useCallback((val) => {
     setFilters((prev) => ({ ...prev, search: val }));
+    setTimeout(() => {
+      const target =
+        document.querySelector("#classifiedsGrid .card") ||
+        document.getElementById("classifiedsGrid");
+      if (target) {
+        const yOffset = -120;
+        const y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+      }
+    }, 100);
   }, []);
 
   // Filter change handler

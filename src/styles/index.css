@@ -158,7 +158,9 @@ h1, h2, h3, h4 { letter-spacing: -0.02em; line-height: 1.2; }
 
 .search-bar { max-width: 600px; margin: 0 auto; position: relative; box-shadow: var(--shadow-premium); border-radius: var(--radius-lg); background: var(--surface); padding: 6px; display: flex; align-items: center; transition: var(--transition); border: 1px solid var(--border-light); }
 .search-bar:focus-within { border-color: var(--primary); transform: translateY(-2px); }
-.search-bar i { padding-left: 1.25rem; color: var(--text-light); font-size: 1.2rem; }
+.search-bar i { padding-left: 0; color: var(--text-light); font-size: 1.2rem; }
+.search-bar__btn { background: transparent; border: none; padding: 0 0.5rem 0 1.25rem; color: var(--text-light); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.2s ease, transform 0.2s ease; outline: none; }
+.search-bar__btn:hover { color: var(--primary); transform: scale(1.15); }
 .search-bar input { width: 100%; padding: 1rem; border: none; font-size: 1rem; font-family: inherit; outline: none; background: transparent; color: var(--text-main); }
 
 .filters-section { background: var(--surface); padding: 2rem 0; border-bottom: 1px solid var(--border-light); position: sticky; top: 70px; z-index: 90; }
