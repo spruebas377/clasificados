@@ -8,6 +8,7 @@ export default function PremiumPaymentModal({
   onClose,
   onConfirmPayment,
   onRequestManualPayment,
+  onBeforePayment,
   adTitle = "",
   adId = null,
 }) {
@@ -27,25 +28,39 @@ export default function PremiumPaymentModal({
     setTimeout(() => setCopiedField(null), 2000);
   }, []);
 
-  const handleSendWhatsApp = useCallback(() => {
+  const handleSendWhatsApp = useCallback(async () => {
+    let finalAdId = adId;
+    if (onBeforePayment) {
+      finalAdId = await onBeforePayment(selectedPlan, 'manual');
+      if (!finalAdId) return;
+    }
     if (onRequestManualPayment) {
-      onRequestManualPayment(selectedPlan);
+      onRequestManualPayment(selectedPlan, finalAdId);
     }
     const message = encodeURIComponent(
       `¡Hola! Acabo de realizar la transferencia para destacar mi publicación:\n\n` +
         `📌 *Título:* ${adTitle || "Anuncio"}\n` +
-        (adId ? `🆔 *ID:* ${adId}\n` : "") +
+        (finalAdId ? `🆔 *ID:* ${finalAdId}\n` : "") +
         `⭐ *Plan Elegido:* ${selectedPlan.name} (${selectedPlan.priceLabel})\n\n` +
         `Adjunto aquí el comprobante de pago.`,
     );
     window.open(`https://wa.me/${supportPhone}?text=${message}`, "_blank");
-  }, [adTitle, adId, supportPhone, selectedPlan, onRequestManualPayment]);
+  }, [adTitle, adId, supportPhone, selectedPlan, onRequestManualPayment, onBeforePayment]);
 
   const handleMercadoPagoCheckout = useCallback(async () => {
     setLoadingMP(true);
     try {
+      let finalAdId = adId;
+      if (onBeforePayment) {
+        finalAdId = await onBeforePayment(selectedPlan, 'mp');
+        if (!finalAdId) {
+          setLoadingMP(false);
+          return;
+        }
+      }
+
       const checkoutUrl = await createMercadoPagoPreference({
-        adId,
+        adId: finalAdId,
         adTitle,
         plan: selectedPlan,
       });
@@ -67,13 +82,18 @@ export default function PremiumPaymentModal({
     }
   }, [adId, adTitle, selectedPlan]);
 
-  const handleConfirm = useCallback(() => {
-    if (onRequestManualPayment) {
-      onRequestManualPayment(selectedPlan);
-    } else if (onConfirmPayment) {
-      onConfirmPayment(selectedPlan);
+  const handleConfirm = useCallback(async () => {
+    let finalAdId = adId;
+    if (onBeforePayment) {
+      finalAdId = await onBeforePayment(selectedPlan, 'manual');
+      if (!finalAdId) return;
     }
-  }, [onRequestManualPayment, onConfirmPayment, selectedPlan]);
+    if (onRequestManualPayment) {
+      onRequestManualPayment(selectedPlan, finalAdId);
+    } else if (onConfirmPayment) {
+      onConfirmPayment(selectedPlan, finalAdId);
+    }
+  }, [onRequestManualPayment, onConfirmPayment, selectedPlan, adId, onBeforePayment]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="600px">

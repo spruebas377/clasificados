@@ -247,9 +247,11 @@ export function useAds() {
         .update(payload)
         .eq('id', editingId)
       if (error) throw error
+      return editingId
     } else {
-      const { error } = await supabase.from('anuncios').insert([payload])
+      const { data, error } = await supabase.from('anuncios').insert([payload]).select()
       if (error) throw error
+      return data[0]?.id
     }
   }, [])
 

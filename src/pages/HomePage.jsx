@@ -285,19 +285,49 @@ export default function HomePage() {
   // Publish
   const handlePublish = useCallback(
     async (adData, files, editingId) => {
+      if (adData.destacado) {
+        setPaymentModal({
+          open: true,
+          pendingAd: { adData, files, editingId },
+          ad: { titulo: adData.titulo, id: editingId || null },
+        });
+        return true; // Intercepted
+      }
+
       await publishAd(adData, files, editingId);
       setPublishModalOpen(false);
       setEditingAd(null);
       fetchAds({ ...filters, userId: user?.id });
-
-      if (adData.destacado) {
-        setPaymentModal({
-          open: true,
-          ad: { titulo: adData.titulo, id: editingId || null },
-        });
-      }
+      return false; // Standard publish
     },
     [publishAd, fetchAds, filters, user?.id],
+  );
+
+  // Before payment (Intercepted Publish)
+  const handleBeforePayment = useCallback(
+    async (selectedPlan, method) => {
+      if (paymentModal.pendingAd) {
+        const { adData, files, editingId } = paymentModal.pendingAd;
+        const modifiedAdData = {
+          ...adData,
+          destacado: false,
+          pago_estado: method === 'mp' ? 'pendiente_mp' : 'pendiente',
+          pago_dias: selectedPlan.days || 7
+        };
+        try {
+          const newAdId = await publishAd(modifiedAdData, files, editingId);
+          setPublishModalOpen(false);
+          setEditingAd(null);
+          fetchAds({ ...filters, userId: user?.id });
+          return newAdId;
+        } catch (e) {
+          alert("Error al publicar el anuncio: " + e.message);
+          return null;
+        }
+      }
+      return paymentModal.ad?.id;
+    },
+    [paymentModal, publishAd, fetchAds, filters, user?.id]
   );
 
   // Feature existing ad handler
@@ -307,10 +337,11 @@ export default function HomePage() {
 
   // Request manual payment handler (Pone el pago en estado pendiente)
   const handleRequestManualPayment = useCallback(
-    async (selectedPlan) => {
+    async (selectedPlan, finalAdId) => {
       const days = selectedPlan?.days || 7;
-      if (paymentModal.ad?.id) {
-        const success = await requestManualFeatured(paymentModal.ad.id, days);
+      const targetId = finalAdId || paymentModal.ad?.id;
+      if (targetId) {
+        const success = await requestManualFeatured(targetId, days);
         if (success) {
           alert(
             "⌛ ¡Solicitud registrada! Tu pago por transferencia quedó en estado Pendiente. Una vez verificado por el administrador, se activará tu destacado automáticamente.",
@@ -318,22 +349,23 @@ export default function HomePage() {
           fetchAds({ ...filters, userId: user?.id });
         }
       }
-      setPaymentModal({ open: false, ad: null });
+      setPaymentModal({ open: false, ad: null, pendingAd: null });
     },
     [paymentModal.ad, requestManualFeatured, fetchAds, filters, user?.id],
   );
 
   // Confirm payment & feature ad in database (Direct auto approval)
   const handleConfirmPayment = useCallback(
-    async (selectedPlan) => {
+    async (selectedPlan, finalAdId) => {
       const days = selectedPlan?.days || 7;
-      if (paymentModal.ad?.id) {
-        const success = await toggleFeaturedAd(paymentModal.ad.id, true, days);
+      const targetId = finalAdId || paymentModal.ad?.id;
+      if (targetId) {
+        const success = await toggleFeaturedAd(targetId, true, days);
         if (success) {
           fetchAds({ ...filters, userId: user?.id });
         }
       }
-      setPaymentModal({ open: false, ad: null });
+      setPaymentModal({ open: false, ad: null, pendingAd: null });
     },
     [paymentModal.ad, toggleFeaturedAd, fetchAds, filters, user?.id],
   );
@@ -448,9 +480,10 @@ export default function HomePage() {
 
       <PremiumPaymentModal
         isOpen={paymentModal.open}
-        onClose={() => setPaymentModal({ open: false, ad: null })}
+        onClose={() => setPaymentModal({ open: false, ad: null, pendingAd: null })}
         onConfirmPayment={handleConfirmPayment}
         onRequestManualPayment={handleRequestManualPayment}
+        onBeforePayment={handleBeforePayment}
         adTitle={paymentModal.ad?.titulo || ""}
         adId={paymentModal.ad?.id || null}
       />

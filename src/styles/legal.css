@@ -171,6 +171,48 @@
   border-bottom: 1px dashed var(--border-light);
 }
 
+.legal-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.95rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+.legal-table thead {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+}
+
+.legal-table th {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.legal-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-muted);
+}
+
+.legal-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.legal-table tbody tr:nth-child(even) {
+  background: var(--background);
+}
+
+.legal-table tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}
+
 @media (max-width: 768px) {
   .legal-header {
     padding: 1.5rem;
@@ -194,5 +236,17 @@
   
   .cookie-buttons button {
     width: 100%;
+  }
+
+  .legal-table {
+    font-size: 0.85rem;
+    display: block;
+    overflow-x: auto;
+  }
+
+  .legal-table th,
+  .legal-table td {
+    padding: 0.6rem 0.75rem;
+    white-space: nowrap;
   }
 }

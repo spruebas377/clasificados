@@ -175,12 +175,14 @@ export default function PublishModal({
           user_id: user.id,
         };
 
-        await onPublish(adData, files, editingAd?.id || null);
-        alert(
-          editingAd
-            ? "✅ Anuncio actualizado!"
-            : "✅ ¡Anuncio publicado con éxito!",
-        );
+        const isPending = await onPublish(adData, files, editingAd?.id || null);
+        if (!isPending) {
+          alert(
+            editingAd
+              ? "✅ Anuncio actualizado!"
+              : "✅ ¡Anuncio publicado con éxito!",
+          );
+        }
         resetForm();
         onClose();
       } catch (e) {
