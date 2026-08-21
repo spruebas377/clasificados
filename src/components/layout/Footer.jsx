@@ -37,6 +37,11 @@ function Footer() {
                   Términos y Condiciones
                 </Link>
               </li>
+              <li>
+                <Link to="/aviso-legal" className="footer__link">
+                  Aviso Legal
+                </Link>
+              </li>
             </ul>
           </nav>
         </div>

@@ -9,6 +9,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "login" }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleSubmit = useCallback(
     async (e) => {
@@ -31,6 +32,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "login" }) {
         }
         setEmail("");
         setPassword("");
+        setAcceptedTerms(false);
       } catch (error) {
         alert(error.message);
       } finally {
@@ -59,6 +61,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = "login" }) {
   const toggleMode = useCallback((e) => {
     e.preventDefault();
     setMode((prev) => (prev === "login" ? "register" : "login"));
+    setAcceptedTerms(false);
   }, []);
 
   return (
@@ -102,6 +105,21 @@ export default function AuthModal({ isOpen, onClose, initialMode = "login" }) {
             }
           />
         </div>
+        {mode === "register" && (
+          <div className="form-group checkbox-group" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginTop: '1rem', marginBottom: '1.5rem' }}>
+            <input 
+              type="checkbox" 
+              id="acceptTerms" 
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              required
+              style={{ marginTop: '0.2rem' }}
+            />
+            <label htmlFor="acceptTerms" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
+              He leído y acepto los <a href="/terminos" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Términos y Condiciones</a>, la <a href="/privacidad" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Política de Privacidad</a> y confirmo haber leído el <a href="/aviso-legal" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Aviso Legal</a>.
+            </label>
+          </div>
+        )}
         <button type="submit" className="btn-submit" disabled={submitting}>
           {submitting
             ? "Procesando..."

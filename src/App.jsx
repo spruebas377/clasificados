@@ -8,6 +8,7 @@ import AuthCallback from "./pages/AuthCallback";
 import PrivacyPage from "./pages/legal/PrivacyPage";
 import TermsPage from "./pages/legal/TermsPage";
 import CookiesPage from "./pages/legal/CookiesPage";
+import LegalNoticePage from "./pages/legal/LegalNoticePage";
 
 import ScrollToTop from "./components/layout/ScrollToTop";
 
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/privacidad" element={<PrivacyPage />} />
         <Route path="/terminos" element={<TermsPage />} />
         <Route path="/cookies" element={<CookiesPage />} />
+        <Route path="/aviso-legal" element={<LegalNoticePage />} />
       </Routes>
     </Router>
   );

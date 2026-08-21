@@ -330,36 +330,48 @@ export default function LegalNoticePage() {
 
             {/* === SECCIÓN 7: RESPONSABILIDAD === */}
             <section>
-              <h2>7. Limitación de Responsabilidad</h2>
+              <h2>7. Limitación de Responsabilidad y Rol del Proveedor</h2>
               <p>
-                ClasiForm actúa como mero intermediario en las operaciones entre
-                usuarios, conforme al art. 40 de la Ley N.° 24.240. Sin
-                perjuicio de las obligaciones legales aplicables, ClasiForm no
+                ClasiForm es un proveedor de servicios de intermediación técnica 
+                (plataforma de anuncios clasificados). Conforme a la jurisprudencia de la 
+                Corte Suprema de Justicia de la Nación (CSJN) aplicable a 
+                buscadores y plataformas de internet, ClasiForm no tiene una obligación 
+                general de monitorear o supervisar de forma activa el contenido 
+                generado por los usuarios, operando bajo un esquema de "notificación y retirada" ante avisos fehacientes de contenidos ilícitos.
+              </p>
+              <p>
+                Asimismo, ClasiForm no es propietario de los bienes o servicios 
+                publicados, no interviene en las negociaciones entre las partes, 
+                no percibe comisiones por las ventas (el servicio Premium es 
+                exclusivamente publicitario) y no participa en la entrega de 
+                los productos ni en la prestación de los servicios. En consecuencia, ClasiForm <strong>no forma parte de 
+                la cadena de comercialización ni de provisión</strong> en los 
+                términos del art. 40 de la Ley N.° 24.240. Toda la 
+                responsabilidad legal (garantías, vicios ocultos, riesgos, daños) recae exclusivamente 
+                sobre el usuario anunciante.
+              </p>
+              <p>
+                Sin perjuicio de las obligaciones legales inderogables aplicables a los proveedores de servicios de la sociedad de la información, ClasiForm no
                 se hace responsable de:
               </p>
               <ul>
                 <li>
-                  La veracidad, exactitud o legalidad de la información
-                  publicada por los usuarios en sus anuncios
+                  La veracidad, exactitud, legitimidad o legalidad de la información
+                  publicada por los usuarios en sus anuncios.
                 </li>
                 <li>
                   Las transacciones, acuerdos o conflictos que surjan entre
-                  usuarios de la plataforma
+                  usuarios de la plataforma, o entre usuarios y terceros.
                 </li>
                 <li>
-                  Daños directos, indirectos o consecuentes derivados del uso de
-                  la plataforma
+                  Daños directos, indirectos, lucro cesante o daño moral derivados del uso de
+                  la plataforma.
                 </li>
                 <li>
                   Interrupciones del servicio por causas de fuerza mayor,
-                  mantenimiento programado o fallas de terceros proveedores
+                  mantenimiento programado, ciberataques o fallas de proveedores.
                 </li>
               </ul>
-              <p>
-                La presente limitación no excluye ni restringe los derechos
-                irrenunciables del consumidor establecidos por la Ley N.° 24.240
-                y el Código Civil y Comercial de la Nación.
-              </p>
             </section>
 
             {/* === SECCIÓN 8: DEFENSA DEL CONSUMIDOR === */}

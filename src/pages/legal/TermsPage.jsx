@@ -34,12 +34,21 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2>2. Descripción del Servicio</h2>
+              <h2>2. Descripción del Servicio y Rol de la Plataforma</h2>
               <p>
-                ClasiForm es una plataforma de anuncios clasificados que permite
+                ClasiForm es exclusivamente un proveedor de espacio virtual que permite
                 a los usuarios publicar, buscar y contactar sobre productos y
-                servicios. Actuamos como un intermediario y no somos parte de
-                ninguna transacción entre usuarios.
+                servicios. 
+              </p>
+              <p>
+                <strong>Importante:</strong> ClasiForm no es propietario de los 
+                bienes o servicios ofrecidos, no los tiene en su posesión, ni los 
+                ofrece en venta. No intervenimos en el perfeccionamiento de las 
+                operaciones, ni en las condiciones estipuladas, por lo que no somos 
+                parte de la cadena de comercialización ni seremos responsables por 
+                la existencia, calidad, cantidad, estado, integridad o legitimidad 
+                de los bienes ofrecidos. Toda transacción es bajo el propio riesgo 
+                de los usuarios.
               </p>
             </section>
 
@@ -126,24 +135,24 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2>7. Limitación de Responsabilidad</h2>
+              <h2>7. Limitación de Responsabilidad e Indemnidad</h2>
               <p>
                 <strong>ClasiForm no se hace responsable de:</strong>
               </p>
               <ul>
                 <li>
-                  Transacciones entre usuarios (somos solo un intermediario)
+                  Las transacciones entre usuarios. Todo reclamo por incumplimiento, vicios o garantías deberá dirigirse exclusivamente al usuario anunciante.
                 </li>
-                <li>La veracidad de la información en los anuncios</li>
-                <li>Daños derivados del uso de la plataforma</li>
+                <li>La capacidad legal de los usuarios para contratar.</li>
+                <li>La veracidad, legalidad y exactitud de la información en los anuncios (el usuario asume la total responsabilidad por su contenido).</li>
+                <li>Daños directos, indirectos, lucro cesante o daños morales derivados del uso de la plataforma.</li>
                 <li>
-                  Interrupciones del servicio por mantenimiento o causas
-                  externas
+                  Interrupciones del servicio por mantenimiento, problemas de red o causas externas.
                 </li>
               </ul>
+              <h3>7.1 Indemnidad</h3>
               <p>
-                El uso de la plataforma es bajo tu propio riesgo. Recomendamos
-                tomar precauciones al concretar transacciones con desconocidos.
+                El usuario acepta mantener indemne y libre de todo daño a ClasiForm, sus directivos, empleados y representantes, frente a cualquier reclamo, demanda, acción legal o sanción administrativa iniciada por otros usuarios o terceros (incluyendo organismos estatales), derivada de sus actividades en la plataforma, el contenido de sus anuncios, la violación de estos Términos y Condiciones o la infracción de leyes o derechos de terceros.
               </p>
             </section>
 

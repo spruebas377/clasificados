@@ -24,19 +24,21 @@ export default function PrivacyPage() {
 
           <div className="legal-content">
             <section>
-              <h2>1. Información General</h2>
+              <h2>1. Información General y Marco Legal</h2>
               <p>
                 En ClasiForm valoramos tu privacidad y nos comprometemos a
-                proteger tus datos personales. Esta política explica cómo
-                recopilamos, utilizamos y protegemos tu información cuando
-                utilizas nuestra plataforma.
+                proteger tus datos personales. Esta Política de Privacidad se 
+                rige por la normativa de la República Argentina, en especial la 
+                <strong>Ley N.° 25.326 de Protección de Datos Personales</strong>, 
+                su Decreto Reglamentario N.° 1558/2001 y las disposiciones de la 
+                Agencia de Acceso a la Información Pública (AAIP).
               </p>
               <p>
-                <strong>Titular del sitio:</strong> ClasiForm
+                <strong>Responsable de la Base de Datos:</strong> ClasiForm
                 <br />
                 <strong>Email de contacto:</strong> {emailAdmin}
                 <br />
-                <strong>Actividad:</strong> Plataforma de clasificados online
+                <strong>Actividad:</strong> Plataforma de intermediación de anuncios clasificados online
               </p>
             </section>
 
@@ -67,25 +69,20 @@ export default function PrivacyPage() {
             <section>
               <h2>3. Base Legal para el Tratamiento</h2>
               <p>
-                Tratamos tus datos personales sobre las siguientes bases
-                legales:
+                El tratamiento de tus datos personales se realiza de manera lícita, 
+                siendo la base principal tu <strong>consentimiento libre, expreso e informado</strong> 
+                (Art. 5, Ley N.° 25.326), el cual otorgas al registrarte o utilizar nuestros servicios. 
+                Asimismo, tratamos tus datos sobre las siguientes bases:
               </p>
               <ul>
                 <li>
-                  <strong>Ejecución de contrato:</strong> Para gestionar tu
-                  cuenta y publicaciones
+                  <strong>Ejecución de contrato:</strong> Para brindarte el servicio de publicación de anuncios y gestión de cuenta.
                 </li>
                 <li>
-                  <strong>Consentimiento explícito:</strong> Para comunicaciones
-                  de marketing
+                  <strong>Interés legítimo:</strong> Para mejorar nuestros servicios, mantener la seguridad técnica de la plataforma y prevenir el fraude.
                 </li>
                 <li>
-                  <strong>Interés legítimo:</strong> Para mejorar nuestros
-                  servicios y prevenir fraudes
-                </li>
-                <li>
-                  <strong>Cumplimiento legal:</strong> Para cumplir con
-                  obligaciones fiscales y legales
+                  <strong>Cumplimiento legal:</strong> Para cumplir con obligaciones fiscales, legales o responder a requerimientos de autoridades competentes.
                 </li>
               </ul>
             </section>
@@ -110,61 +107,52 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2>5. Compartición de Datos</h2>
+              <h2>5. Compartición y Transferencia Internacional de Datos</h2>
               <p>
                 No vendemos ni alquilamos tus datos personales. Compartimos
                 información solo en los siguientes casos:
               </p>
               <ul>
                 <li>
-                  <strong>Proveedores de servicios:</strong> Supabase
-                  (alojamiento de datos), APIs de geolocalización
+                  <strong>Proveedores de servicios (Transferencia Internacional):</strong> 
+                  Utilizamos proveedores de infraestructura en la nube (como Supabase) 
+                  que pueden alojar datos en servidores ubicados fuera de la República Argentina. 
+                  Al aceptar esta política, <strong>prestas tu consentimiento expreso para la 
+                  transferencia internacional de tus datos</strong> (Art. 12, Ley N.° 25.326) 
+                  a jurisdicciones que cuenten con niveles de protección adecuados o bajo 
+                  mecanismos contractuales aprobados.
                 </li>
                 <li>
-                  <strong>Cumplimiento legal:</strong> Cuando sea requerido por
-                  ley o proceso legal
+                  <strong>Cumplimiento legal y autoridades:</strong> Cuando sea formalmente requerido por 
+                  jueces, fiscales o autoridades gubernamentales competentes.
                 </li>
                 <li>
-                  <strong>Protección de derechos:</strong> Para proteger los
-                  derechos, propiedad o seguridad de ClasiForm y sus usuarios
-                </li>
-                <li>
-                  <strong>Con tu consentimiento:</strong> En cualquier otro
-                  caso, te pediremos permiso explícito
+                  <strong>Protección de derechos:</strong> Para proteger los derechos, propiedad o seguridad de ClasiForm, sus usuarios o el público general frente a actividades ilícitas.
                 </li>
               </ul>
             </section>
 
             <section>
-              <h2>6. Tus Derechos (GDPR/Argentina)</h2>
-              <p>Como titular de datos, tienes los siguientes derechos:</p>
+              <h2>6. Tus Derechos (Ley N.° 25.326)</h2>
+              <p>
+                Conforme a los arts. 14, 15 y 16 de la Ley N.° 25.326, como titular de los datos personales tienes derecho a:
+              </p>
               <ul>
                 <li>
-                  <strong>Acceso:</strong> Saber qué datos tenemos sobre ti
+                  <strong>Acceso:</strong> Solicitar y obtener información sobre tus datos almacenados de forma gratuita a intervalos no inferiores a seis meses (salvo interés legítimo).
                 </li>
                 <li>
-                  <strong>Rectificación:</strong> Corregir datos inexactos
+                  <strong>Rectificación y Actualización:</strong> Corregir o actualizar datos falsos, inexactos o incompletos.
                 </li>
                 <li>
-                  <strong>Supresión:</strong> Solicitar la eliminación de tus
-                  datos (derecho al olvido)
-                </li>
-                <li>
-                  <strong>Limitación:</strong> Restringir el tratamiento de tus
-                  datos
-                </li>
-                <li>
-                  <strong>Portabilidad:</strong> Recibir tus datos en formato
-                  estructurado
-                </li>
-                <li>
-                  <strong>Oposición:</strong> Oponente al tratamiento para
-                  marketing
+                  <strong>Supresión (Derecho al olvido):</strong> Solicitar la eliminación de tus datos cuando ya no sean necesarios o desees retirar tu consentimiento.
                 </li>
               </ul>
               <p>
-                Para ejercer estos derechos, contáctanos en:{" "}
-                <strong>{emailAdmin}</strong>
+                Para ejercer estos derechos, debes enviar un correo a <strong>{emailAdmin}</strong> acreditando tu identidad.
+              </p>
+              <p>
+                <strong>Información Legal Obligatoria:</strong> "LA AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales."
               </p>
             </section>
 

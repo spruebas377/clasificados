@@ -31,7 +31,7 @@ export default function PremiumPaymentModal({
   const handleSendWhatsApp = useCallback(async () => {
     let finalAdId = adId;
     if (onBeforePayment) {
-      finalAdId = await onBeforePayment(selectedPlan, 'manual');
+      finalAdId = await onBeforePayment(selectedPlan, "manual");
       if (!finalAdId) return;
     }
     if (onRequestManualPayment) {
@@ -45,14 +45,21 @@ export default function PremiumPaymentModal({
         `Adjunto aquí el comprobante de pago.`,
     );
     window.open(`https://wa.me/${supportPhone}?text=${message}`, "_blank");
-  }, [adTitle, adId, supportPhone, selectedPlan, onRequestManualPayment, onBeforePayment]);
+  }, [
+    adTitle,
+    adId,
+    supportPhone,
+    selectedPlan,
+    onRequestManualPayment,
+    onBeforePayment,
+  ]);
 
   const handleMercadoPagoCheckout = useCallback(async () => {
     setLoadingMP(true);
     try {
       let finalAdId = adId;
       if (onBeforePayment) {
-        finalAdId = await onBeforePayment(selectedPlan, 'mp');
+        finalAdId = await onBeforePayment(selectedPlan, "mp");
         if (!finalAdId) {
           setLoadingMP(false);
           return;
@@ -85,7 +92,7 @@ export default function PremiumPaymentModal({
   const handleConfirm = useCallback(async () => {
     let finalAdId = adId;
     if (onBeforePayment) {
-      finalAdId = await onBeforePayment(selectedPlan, 'manual');
+      finalAdId = await onBeforePayment(selectedPlan, "manual");
       if (!finalAdId) return;
     }
     if (onRequestManualPayment) {
@@ -93,7 +100,13 @@ export default function PremiumPaymentModal({
     } else if (onConfirmPayment) {
       onConfirmPayment(selectedPlan, finalAdId);
     }
-  }, [onRequestManualPayment, onConfirmPayment, selectedPlan, adId, onBeforePayment]);
+  }, [
+    onRequestManualPayment,
+    onConfirmPayment,
+    selectedPlan,
+    adId,
+    onBeforePayment,
+  ]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="600px">
@@ -134,7 +147,9 @@ export default function PremiumPaymentModal({
                 )}
                 <div className="plan-card__header">
                   <h4 className="plan-card__title">{plan.name}</h4>
-                  <strong className="plan-card__price">{plan.priceLabel}</strong>
+                  <strong className="plan-card__price">
+                    {plan.priceLabel}
+                  </strong>
                 </div>
                 <p className="plan-card__desc">{plan.desc}</p>
                 <div className="plan-card__radio">
@@ -248,12 +263,13 @@ export default function PremiumPaymentModal({
           <h4>Pasos para activar con transferencia:</h4>
           <ol>
             <li>
-              Realizá la transferencia de <strong>{selectedPlan.priceLabel}</strong>{" "}
-              al Alias o CVU indicado.
+              Realizá la transferencia de{" "}
+              <strong>{selectedPlan.priceLabel}</strong> al Alias o CVU
+              indicado.
             </li>
             <li>Enviá el comprobante por WhatsApp con el plan seleccionado.</li>
             <li>
-              ¡Tu anuncio quedará destacado inmediatamente por{" "}
+              ¡Al confirmarse tu transferencia, tu anuncio quedará destacado por{" "}
               <strong>{selectedPlan.name}</strong>!
             </li>
           </ol>
