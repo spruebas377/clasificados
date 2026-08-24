@@ -43,12 +43,16 @@ export default function AuthModal({ isOpen, onClose, initialMode = "login" }) {
   );
 
   const handleGoogleLogin = useCallback(async () => {
+    if (!acceptedTerms) {
+      alert("Debes aceptar los Términos y Condiciones, la Política de Privacidad y el Aviso Legal para continuar.");
+      return;
+    }
     try {
       await signInWithGoogle();
     } catch (error) {
       alert("Error: " + error.message);
     }
-  }, [signInWithGoogle]);
+  }, [signInWithGoogle, acceptedTerms]);
 
   const handleFacebookLogin = useCallback(async () => {
     try {
@@ -132,11 +136,28 @@ export default function AuthModal({ isOpen, onClose, initialMode = "login" }) {
           <span>O continúa con</span>
         </div>
 
+        {mode === "login" && (
+          <div className="form-group checkbox-group" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '1rem' }}>
+            <input 
+              type="checkbox" 
+              id="acceptTermsGoogle" 
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              style={{ marginTop: '0.2rem' }}
+            />
+            <label htmlFor="acceptTermsGoogle" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
+              He leído y acepto los <a href="/terminos" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Términos y Condiciones</a>, la <a href="/privacidad" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Política de Privacidad</a> y confirmo haber leído el <a href="/aviso-legal" target="_blank" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Aviso Legal</a>.
+            </label>
+          </div>
+        )}
+
         <div className="auth-social-grid">
           <button
             type="button"
-            className="btn-social btn-google"
+            className={`btn-social btn-google${!acceptedTerms ? ' btn-social--disabled' : ''}`}
             onClick={handleGoogleLogin}
+            disabled={!acceptedTerms}
+            title={!acceptedTerms ? 'Debes aceptar los términos para continuar' : ''}
           >
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
